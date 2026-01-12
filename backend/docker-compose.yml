@@ -1,0 +1,22 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: trip-planner-db
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: postgres123
+      POSTGRES_DB: trip_planner
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./schema.sql:/docker-entrypoint-initdb.d/02-schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d trip_planner"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+    driver: local
