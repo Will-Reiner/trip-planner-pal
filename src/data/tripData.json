@@ -1,0 +1,165 @@
+{
+  "participants": [
+    { "id": 1, "name": "Ana", "photo": null, "title": "" },
+    { "id": 2, "name": "Bruno", "photo": null, "title": "" },
+    { "id": 3, "name": "Carla", "photo": null, "title": "" },
+    { "id": 4, "name": "Diego", "photo": null, "title": "" },
+    { "id": 5, "name": "Elena", "photo": null, "title": "" },
+    { "id": 6, "name": "Felipe", "photo": null, "title": "" },
+    { "id": 7, "name": "Gabriela", "photo": null, "title": "" },
+    { "id": 8, "name": "Henrique", "photo": null, "title": "" },
+    { "id": 9, "name": "Isabella", "photo": null, "title": "" },
+    { "id": 10, "name": "João", "photo": null, "title": "" },
+    { "id": 11, "name": "Karina", "photo": null, "title": "" },
+    { "id": 12, "name": "Lucas", "photo": null, "title": "" },
+    { "id": 13, "name": "Marina", "photo": null, "title": "" },
+    { "id": 14, "name": "Nicolas", "photo": null, "title": "" },
+    { "id": 15, "name": "Olivia", "photo": null, "title": "" }
+  ],
+  "meals": [
+    {
+      "id": 1,
+      "day": 14,
+      "type": "Café da Manhã",
+      "description": "Pães, frutas e sucos",
+      "ingredients": ["Pão francês", "Manteiga", "Queijo", "Presunto", "Frutas variadas", "Suco de laranja", "Café"],
+      "chef": null,
+      "dishWashers": [null, null]
+    },
+    {
+      "id": 2,
+      "day": 14,
+      "type": "Almoço",
+      "description": "Churrasco completo",
+      "ingredients": ["Picanha", "Linguiça", "Frango", "Farofa", "Vinagrete", "Arroz", "Pão de alho"],
+      "chef": null,
+      "dishWashers": [null, null]
+    },
+    {
+      "id": 3,
+      "day": 14,
+      "type": "Jantar",
+      "description": "Pizza night",
+      "ingredients": ["Massa de pizza", "Molho de tomate", "Mussarela", "Calabresa", "Orégano", "Azeitonas"],
+      "chef": null,
+      "dishWashers": [null, null]
+    },
+    {
+      "id": 4,
+      "day": 15,
+      "type": "Café da Manhã",
+      "description": "Panquecas e waffles",
+      "ingredients": ["Farinha", "Ovos", "Leite", "Mel", "Frutas vermelhas", "Nutella"],
+      "chef": null,
+      "dishWashers": [null, null]
+    },
+    {
+      "id": 5,
+      "day": 15,
+      "type": "Almoço",
+      "description": "Feijoada",
+      "ingredients": ["Feijão preto", "Carnes variadas", "Couve", "Laranja", "Farofa", "Arroz branco"],
+      "chef": null,
+      "dishWashers": [null, null]
+    },
+    {
+      "id": 6,
+      "day": 15,
+      "type": "Jantar",
+      "description": "Hambúrgueres artesanais",
+      "ingredients": ["Carne moída", "Pão brioche", "Queijo cheddar", "Bacon", "Alface", "Tomate", "Cebola caramelizada"],
+      "chef": null,
+      "dishWashers": [null, null]
+    },
+    {
+      "id": 7,
+      "day": 16,
+      "type": "Café da Manhã",
+      "description": "Tapioca e açaí",
+      "ingredients": ["Tapioca", "Queijo coalho", "Coco ralado", "Açaí", "Granola", "Banana"],
+      "chef": null,
+      "dishWashers": [null, null]
+    },
+    {
+      "id": 8,
+      "day": 16,
+      "type": "Almoço",
+      "description": "Moqueca baiana",
+      "ingredients": ["Peixe fresco", "Leite de coco", "Azeite de dendê", "Pimentão", "Tomate", "Coentro", "Arroz"],
+      "chef": null,
+      "dishWashers": [null, null]
+    },
+    {
+      "id": 9,
+      "day": 16,
+      "type": "Jantar",
+      "description": "Noite do cachorro-quente",
+      "ingredients": ["Salsicha", "Pão de hot dog", "Purê de batata", "Milho", "Ervilha", "Batata palha", "Molhos"],
+      "chef": null,
+      "dishWashers": [null, null]
+    },
+    {
+      "id": 10,
+      "day": 17,
+      "type": "Café da Manhã",
+      "description": "Brunch de despedida",
+      "ingredients": ["Ovos", "Bacon", "Torradas", "Cream cheese", "Salmão", "Frutas", "Champagne"],
+      "chef": null,
+      "dishWashers": [null, null]
+    },
+    {
+      "id": 11,
+      "day": 17,
+      "type": "Almoço",
+      "description": "Lasanha especial",
+      "ingredients": ["Massa de lasanha", "Carne moída", "Molho branco", "Molho vermelho", "Mussarela", "Presunto"],
+      "chef": null,
+      "dishWashers": [null, null]
+    }
+  ],
+  "drinks": {
+    "alcoholic": [
+      { "id": 1, "name": "Cerveja", "emoji": "🍺", "votes": [] },
+      { "id": 2, "name": "Vinho", "emoji": "🍷", "votes": [] },
+      { "id": 3, "name": "Caipirinha", "emoji": "🍋", "votes": [] },
+      { "id": 4, "name": "Whisky", "emoji": "🥃", "votes": [] },
+      { "id": 5, "name": "Gin Tônica", "emoji": "🍸", "votes": [] },
+      { "id": 6, "name": "Vodka", "emoji": "🧊", "votes": [] }
+    ],
+    "nonAlcoholic": [
+      { "id": 1, "name": "Refrigerante", "emoji": "🥤", "votes": [] },
+      { "id": 2, "name": "Suco Natural", "emoji": "🧃", "votes": [] },
+      { "id": 3, "name": "Água de Coco", "emoji": "🥥", "votes": [] },
+      { "id": 4, "name": "Chá Gelado", "emoji": "🍵", "votes": [] },
+      { "id": 5, "name": "Energético", "emoji": "⚡", "votes": [] }
+    ]
+  },
+  "communityItems": [
+    { "id": 1, "name": "Caixa de som Bluetooth", "assignee": null },
+    { "id": 2, "name": "Churrasqueira portátil", "assignee": null },
+    { "id": 3, "name": "Cooler grande", "assignee": null },
+    { "id": 4, "name": "Baralho de cartas", "assignee": null },
+    { "id": 5, "name": "Protetor solar", "assignee": null }
+  ],
+  "tasks": [
+    { "id": 1, "name": "Comprar gelo", "assignee": null },
+    { "id": 2, "name": "Reservar transporte", "assignee": null },
+    { "id": 3, "name": "Fazer playlist colaborativa", "assignee": null },
+    { "id": 4, "name": "Comprar carvão", "assignee": null }
+  ],
+  "essentials": [
+    { "id": 1, "name": "Documento de identidade", "checked": false },
+    { "id": 2, "name": "Carregador de celular", "checked": false },
+    { "id": 3, "name": "Roupas de banho", "checked": false },
+    { "id": 4, "name": "Medicamentos pessoais", "checked": false },
+    { "id": 5, "name": "Repelente", "checked": false }
+  ],
+  "partyThemes": [
+    { "id": 1, "name": "Anos 80 Neon", "emoji": "🕺", "votes": [] },
+    { "id": 2, "name": "Havaiana Tropical", "emoji": "🌺", "votes": [] },
+    { "id": 3, "name": "Fantasia Livre", "emoji": "🎭", "votes": [] },
+    { "id": 4, "name": "All White", "emoji": "🤍", "votes": [] },
+    { "id": 5, "name": "Pijama Party", "emoji": "😴", "votes": [] }
+  ],
+  "quotes": []
+}
