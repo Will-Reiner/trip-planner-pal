@@ -70,36 +70,8 @@ const Experience = () => {
 
   return (
     <div className="min-h-screen bg-background pb-24">
-      {/* Countdown */}
-      <div className="bg-gradient-to-r from-primary via-accent to-primary p-4 text-center">
-        <div className="flex items-center justify-center gap-2 mb-2">
-          <Calendar className="w-5 h-5 text-primary-foreground" />
-          <span className="text-sm font-medium text-primary-foreground">
-            Contagem Regressiva para a Trip! 🎉
-          </span>
-        </div>
-        <div className="flex justify-center gap-3">
-          <div className="bg-background/20 backdrop-blur-sm rounded-xl px-3 py-2 min-w-[60px]">
-            <div className="text-2xl font-bold text-primary-foreground">{countdown.days}</div>
-            <div className="text-xs text-primary-foreground/80">dias</div>
-          </div>
-          <div className="bg-background/20 backdrop-blur-sm rounded-xl px-3 py-2 min-w-[60px]">
-            <div className="text-2xl font-bold text-primary-foreground">{countdown.hours}</div>
-            <div className="text-xs text-primary-foreground/80">horas</div>
-          </div>
-          <div className="bg-background/20 backdrop-blur-sm rounded-xl px-3 py-2 min-w-[60px]">
-            <div className="text-2xl font-bold text-primary-foreground">{countdown.minutes}</div>
-            <div className="text-xs text-primary-foreground/80">min</div>
-          </div>
-          <div className="bg-background/20 backdrop-blur-sm rounded-xl px-3 py-2 min-w-[60px]">
-            <div className="text-2xl font-bold text-primary-foreground">{countdown.seconds}</div>
-            <div className="text-xs text-primary-foreground/80">seg</div>
-          </div>
-        </div>
-      </div>
-
       {/* Header */}
-      <div className="bg-gradient-to-br from-primary/30 to-accent p-6 pt-4">
+      <div className="bg-gradient-to-br from-primary/30 to-accent p-6 pt-8">
         <div className="max-w-md mx-auto">
           <div className="flex items-center gap-3 mb-2">
             <Sparkles className="w-6 h-6 text-primary" />
@@ -128,6 +100,36 @@ const Experience = () => {
                 <p className="text-xs text-muted-foreground mt-1">
                   playlist:37i9dQZF1DXcBWIGoYBM5M
                 </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Countdown */}
+        <section className="space-y-3">
+          <div className="bg-gradient-to-r from-primary via-accent to-primary rounded-2xl p-4 text-center">
+            <div className="flex items-center justify-center gap-2 mb-3">
+              <Calendar className="w-5 h-5 text-primary-foreground" />
+              <span className="text-sm font-medium text-primary-foreground">
+                Contagem Regressiva para a Trip! 🎉
+              </span>
+            </div>
+            <div className="flex justify-center gap-3">
+              <div className="bg-background/20 backdrop-blur-sm rounded-xl px-3 py-2 min-w-[60px]">
+                <div className="text-2xl font-bold text-primary-foreground">{countdown.days}</div>
+                <div className="text-xs text-primary-foreground/80">dias</div>
+              </div>
+              <div className="bg-background/20 backdrop-blur-sm rounded-xl px-3 py-2 min-w-[60px]">
+                <div className="text-2xl font-bold text-primary-foreground">{countdown.hours}</div>
+                <div className="text-xs text-primary-foreground/80">horas</div>
+              </div>
+              <div className="bg-background/20 backdrop-blur-sm rounded-xl px-3 py-2 min-w-[60px]">
+                <div className="text-2xl font-bold text-primary-foreground">{countdown.minutes}</div>
+                <div className="text-xs text-primary-foreground/80">min</div>
+              </div>
+              <div className="bg-background/20 backdrop-blur-sm rounded-xl px-3 py-2 min-w-[60px]">
+                <div className="text-2xl font-bold text-primary-foreground">{countdown.seconds}</div>
+                <div className="text-xs text-primary-foreground/80">seg</div>
               </div>
             </div>
           </div>
