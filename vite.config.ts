@@ -8,6 +8,12 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: process.env.PORT ? parseInt(process.env.PORT) : 8080,
+    allowedHosts: [
+      "rebolahub.astraflow.io",
+      ".astraflow.io",
+      "localhost",
+      ".localhost"
+    ],
   },
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
   resolve: {
