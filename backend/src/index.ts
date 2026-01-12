@@ -19,7 +19,7 @@ const PORT = process.env.PORT || 3001;
 // Middlewares
 app.use(helmet());
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:8080', 'http://localhost:3000', 'https://rebolahub.astraflow.io'],
+  origin: ['http://localhost:5173', 'http://localhost:8080', 'http://localhost:3000', 'https://rebolahub.astraflow.io', 'https://tripback.astraflow.io'],
   credentials: true
 }));
 app.use(express.json());
