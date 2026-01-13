@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS users (
     nome VARCHAR(255) NOT NULL,
     avatar_url TEXT,
     titulo_engracado VARCHAR(255),
+    senha VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

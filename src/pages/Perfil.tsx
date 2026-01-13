@@ -1,31 +1,93 @@
 import { useUser } from '../contexts/UserContext';
+import { useTripData } from '../contexts/TripDataContext';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
 import { User, LogOut, Camera, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useState } from 'react';
+import api from '@/services/api';
 
 const Perfil = () => {
   const { currentUser, setCurrentUser } = useUser();
+  const { reloadData } = useTripData();
   const navigate = useNavigate();
+  const [uploading, setUploading] = useState(false);
 
   const handleLogout = () => {
     setCurrentUser(null);
     navigate('/');
   };
 
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && currentUser) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
+      setUploading(true);
+      
+      try {
+        // Redimensiona a imagem antes de enviar
+        const resizedImage = await resizeImage(file, 400, 400);
+        
+        // Atualiza a foto no backend
+        await api.put(`/users/${currentUser.id}`, {
+          avatar_url: resizedImage
+        });
+        
+        // Atualiza o estado local
         setCurrentUser({
           ...currentUser,
-          photo: reader.result as string
+          photo: resizedImage
         });
-      };
-      reader.readAsDataURL(file);
+
+        // Recarrega todos os dados para atualizar o painel de participantes
+        await reloadData();
+      } catch (error) {
+        console.error('Erro ao atualizar foto:', error);
+        alert('Erro ao atualizar foto. Tente novamente.');
+      } finally {
+        setUploading(false);
+      }
     }
+  };
+
+  // Função para redimensionar imagem
+  const resizeImage = (file: File, maxWidth: number, maxHeight: number): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          // Calcula novas dimensões mantendo proporção
+          if (width > height) {
+            if (width > maxWidth) {
+              height = (height * maxWidth) / width;
+              width = maxWidth;
+            }
+          } else {
+            if (height > maxHeight) {
+              width = (width * maxHeight) / height;
+              height = maxHeight;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+
+          // Converte para base64 com qualidade otimizada
+          resolve(canvas.toDataURL('image/jpeg', 0.8));
+        };
+        img.onerror = reject;
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
   };
 
   return (
@@ -51,13 +113,18 @@ const Perfil = () => {
               </AvatarFallback>
             </Avatar>
             <div className="absolute bottom-2 right-2 w-10 h-10 bg-primary rounded-full flex items-center justify-center shadow-lg">
-              <Camera className="w-5 h-5 text-primary-foreground" />
+              {uploading ? (
+                <div className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <Camera className="w-5 h-5 text-primary-foreground" />
+              )}
             </div>
             <input
               type="file"
               accept="image/*"
               onChange={handlePhotoChange}
               className="hidden"
+              disabled={uploading}
             />
           </label>
 

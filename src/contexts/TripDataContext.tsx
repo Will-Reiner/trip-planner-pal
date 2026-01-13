@@ -85,6 +85,7 @@ interface TripDataContextType {
   toggleEssential: (essentialId: number) => void;
   votePartyTheme: (themeId: number, userId: number) => void;
   addQuote: (text: string, authorId: number) => void;
+  reloadData: () => Promise<void>;
 }
 
 const TripDataContext = createContext<TripDataContextType | undefined>(undefined);
@@ -469,7 +470,8 @@ export const TripDataProvider: React.FC<{ children: ReactNode }> = ({ children }
       addEssential,
       toggleEssential,
       votePartyTheme,
-      addQuote
+      addQuote,
+      reloadData: loadAllData
     }}>
       {children}
     </TripDataContext.Provider>

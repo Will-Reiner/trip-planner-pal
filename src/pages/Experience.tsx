@@ -17,7 +17,7 @@ const Experience = () => {
   const [titleInput, setTitleInput] = useState('');
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
-  const tripDate = new Date('2025-02-14T00:00:00');
+  const tripDate = new Date('2026-02-14T00:00:00'); // Data da trip
 
   useEffect(() => {
     const calculateCountdown = () => {
@@ -90,48 +90,50 @@ const Experience = () => {
             <Music className="w-5 h-5 text-primary" />
             <h2 className="text-lg font-bold text-foreground">Playlist da Trip</h2>
           </div>
-          <div className="bg-card rounded-2xl border border-border p-4">
-            <div className="aspect-[3/1] bg-muted rounded-xl flex items-center justify-center">
-              <div className="text-center">
-                <Music className="w-12 h-12 text-muted-foreground mx-auto mb-2" />
-                <p className="text-sm text-muted-foreground">
-                  Cole aqui o embed do Spotify
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  playlist:37i9dQZF1DXcBWIGoYBM5M
-                </p>
-              </div>
-            </div>
+          <div className="bg-card rounded-2xl border border-border overflow-hidden">
+            <iframe 
+              src="https://open.spotify.com/embed/playlist/3v4KHoOj2ac4XmaQy4hMPQ?utm_source=generator" 
+              width="100%" 
+              height="352" 
+              frameBorder="0" 
+              allowFullScreen
+              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
+              loading="lazy"
+              className="rounded-2xl"
+            ></iframe>
           </div>
         </section>
 
         {/* Countdown */}
         <section className="space-y-3">
-          <div className="bg-gradient-to-r from-primary via-accent to-primary rounded-2xl p-4 text-center">
-            <div className="flex items-center justify-center gap-2 mb-3">
-              <Calendar className="w-5 h-5 text-primary-foreground" />
-              <span className="text-sm font-medium text-primary-foreground">
+          <div className="bg-gradient-to-br from-purple-600 via-pink-500 to-orange-500 rounded-3xl p-6 text-center shadow-xl">
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <Calendar className="w-6 h-6 text-white" />
+              <span className="text-lg font-bold text-white">
                 Contagem Regressiva para a Trip! 🎉
               </span>
             </div>
-            <div className="flex justify-center gap-3">
-              <div className="bg-background/20 backdrop-blur-sm rounded-xl px-3 py-2 min-w-[60px]">
-                <div className="text-2xl font-bold text-primary-foreground">{countdown.days}</div>
-                <div className="text-xs text-primary-foreground/80">dias</div>
+            <div className="flex justify-center gap-2 mb-2">
+              <div className="bg-white/30 backdrop-blur-md rounded-2xl px-4 py-3 min-w-[70px] border-2 border-white/40">
+                <div className="text-4xl font-black text-white drop-shadow-lg">{countdown.days}</div>
+                <div className="text-sm font-semibold text-white/90">dias</div>
               </div>
-              <div className="bg-background/20 backdrop-blur-sm rounded-xl px-3 py-2 min-w-[60px]">
-                <div className="text-2xl font-bold text-primary-foreground">{countdown.hours}</div>
-                <div className="text-xs text-primary-foreground/80">horas</div>
+              <div className="bg-white/30 backdrop-blur-md rounded-2xl px-4 py-3 min-w-[70px] border-2 border-white/40">
+                <div className="text-4xl font-black text-white drop-shadow-lg">{countdown.hours}</div>
+                <div className="text-sm font-semibold text-white/90">horas</div>
               </div>
-              <div className="bg-background/20 backdrop-blur-sm rounded-xl px-3 py-2 min-w-[60px]">
-                <div className="text-2xl font-bold text-primary-foreground">{countdown.minutes}</div>
-                <div className="text-xs text-primary-foreground/80">min</div>
+              <div className="bg-white/30 backdrop-blur-md rounded-2xl px-4 py-3 min-w-[70px] border-2 border-white/40">
+                <div className="text-4xl font-black text-white drop-shadow-lg">{countdown.minutes}</div>
+                <div className="text-sm font-semibold text-white/90">min</div>
               </div>
-              <div className="bg-background/20 backdrop-blur-sm rounded-xl px-3 py-2 min-w-[60px]">
-                <div className="text-2xl font-bold text-primary-foreground">{countdown.seconds}</div>
-                <div className="text-xs text-primary-foreground/80">seg</div>
+              <div className="bg-white/30 backdrop-blur-md rounded-2xl px-4 py-3 min-w-[70px] border-2 border-white/40">
+                <div className="text-4xl font-black text-white drop-shadow-lg">{countdown.seconds}</div>
+                <div className="text-sm font-semibold text-white/90">seg</div>
               </div>
             </div>
+            <p className="text-white/90 text-sm font-medium mt-3">
+              14 de Fevereiro de 2026 🏖️
+            </p>
           </div>
         </section>
 
