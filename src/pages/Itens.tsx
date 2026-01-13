@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTripData } from '../contexts/TripDataContext';
 import { useUser } from '../contexts/UserContext';
 import BottomNav from '../components/BottomNav';
+import { getUserColor } from '../lib/userColors';
 import { Package, ClipboardList, AlertCircle, Plus, UserCheck, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -96,7 +97,10 @@ const Itens = () => {
                 >
                   <span className="font-medium text-foreground">{item.name}</span>
                   {item.assignee ? (
-                    <Badge className="bg-primary text-primary-foreground">
+                    <Badge 
+                      className="text-white"
+                      style={{ backgroundColor: getUserColor(item.assignee) }}
+                    >
                       <UserCheck className="w-3 h-3 mr-1" />
                       {getParticipantName(item.assignee)}
                     </Badge>
@@ -136,7 +140,10 @@ const Itens = () => {
                 >
                   <span className="font-medium text-foreground">{task.name}</span>
                   {task.assignee ? (
-                    <Badge className="bg-primary text-primary-foreground">
+                    <Badge 
+                      className="text-white"
+                      style={{ backgroundColor: getUserColor(task.assignee) }}
+                    >
                       <UserCheck className="w-3 h-3 mr-1" />
                       {getParticipantName(task.assignee)}
                     </Badge>

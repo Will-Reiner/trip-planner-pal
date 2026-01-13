@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTripData } from '../contexts/TripDataContext';
 import { useUser } from '../contexts/UserContext';
+import { getUserColor } from '../lib/userColors';
 import { ChefHat, Droplets, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -66,7 +67,10 @@ const MealCard: React.FC<MealCardProps> = ({ meal }) => {
           </div>
           <div className="flex items-center gap-2">
             {meal.chef && (
-              <Badge variant="secondary" className="text-xs">
+              <Badge 
+                className="text-xs text-white"
+                style={{ backgroundColor: getUserColor(meal.chef) }}
+              >
                 <ChefHat className="w-3 h-3 mr-1" />
                 {getParticipantName(meal.chef)}
               </Badge>
@@ -103,7 +107,10 @@ const MealCard: React.FC<MealCardProps> = ({ meal }) => {
                 <span className="font-medium text-foreground">Chef</span>
               </div>
               {meal.chef ? (
-                <Badge className="bg-primary text-primary-foreground">
+                <Badge 
+                  className="text-white"
+                  style={{ backgroundColor: getUserColor(meal.chef) }}
+                >
                   {getParticipantName(meal.chef)}
                 </Badge>
               ) : (
@@ -132,7 +139,10 @@ const MealCard: React.FC<MealCardProps> = ({ meal }) => {
                   >
                     <span className="text-sm text-muted-foreground">#{index + 1}</span>
                     {washer ? (
-                      <Badge variant="secondary" className="text-xs">
+                      <Badge 
+                        className="text-xs text-white"
+                        style={{ backgroundColor: getUserColor(washer) }}
+                      >
                         {getParticipantName(washer)}
                       </Badge>
                     ) : (
