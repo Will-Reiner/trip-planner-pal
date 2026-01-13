@@ -1,12 +1,12 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { UtensilsCrossed, ListChecks, Sparkles, Users, Trophy } from 'lucide-react';
+import { UtensilsCrossed, ListChecks, ShoppingCart, DollarSign, Sparkles, Users, Trophy } from 'lucide-react';
 
 const navItems = [
-  { path: '/gastronomia', icon: UtensilsCrossed, label: 'Gastronomia' },
+  { path: '/gastronomia', icon: UtensilsCrossed, label: 'Gastro' },
+  { path: '/lista-de-mercado', icon: ShoppingCart, label: 'Mercado' },
+  { path: '/custos', icon: DollarSign, label: 'Custos' },
   { path: '/itens', icon: ListChecks, label: 'Itens' },
-  { path: '/experience', icon: Sparkles, label: 'Experience' },
   { path: '/perfil', icon: Users, label: 'Perfil' },
-  { path: 'https://pirimatch.astraflow.io', icon: Trophy, label: 'PiriMatch', external: true },
 ];
 
 const BottomNav = () => {

@@ -16,6 +16,7 @@ interface Meal {
   description: string;
   ingredients: string[];
   chef: number | null;
+  helper: number | null;
   dishWashers: (number | null)[];
 }
 
@@ -75,6 +76,7 @@ interface TripDataContextType {
   data: TripData;
   updateParticipant: (id: number, updates: Partial<Participant>) => void;
   assignChef: (mealId: number, userId: number) => void;
+  assignHelper: (mealId: number, userId: number) => void;
   assignDishWasher: (mealId: number, slot: number, userId: number) => void;
   voteDrink: (type: 'alcoholic' | 'nonAlcoholic', drinkId: number, userId: number) => void;
   addCommunityItem: (name: string) => void;
@@ -137,9 +139,10 @@ export const TripDataProvider: React.FC<{ children: ReactNode }> = ({ children }
         id: m.id,
         day: new Date(m.data).getDate(),
         type: m.tipo_refeicao === 'cafe' ? 'Café da Manhã' : m.tipo_refeicao === 'almoco' ? 'Almoço' : 'Jantar',
-        description: '',
+        description: m.nome_refeicao || '',
         ingredients: m.ingredientes || [],
         chef: m.cook_id,
+        helper: m.helper_id,
         dishWashers: [m.dishwasher1_id, m.dishwasher2_id]
       }));
 
@@ -263,6 +266,22 @@ export const TripDataProvider: React.FC<{ children: ReactNode }> = ({ children }
       toast({ title: 'Chef atribuído com sucesso!' });
     } catch (error) {
       toast({ title: 'Erro ao atribuir chef', variant: 'destructive' });
+    }
+  };
+
+  const assignHelper = async (mealId: number, userId: number) => {
+    try {
+      await api.claimMealRole(mealId, 'helper', userId);
+      
+      setData(prev => ({
+        ...prev,
+        meals: prev.meals.map(m =>
+          m.id === mealId ? { ...m, helper: userId } : m
+        )
+      }));
+      toast({ title: 'Ajudante atribuído com sucesso!' });
+    } catch (error) {
+      toast({ title: 'Erro ao atribuir ajudante', variant: 'destructive' });
     }
   };
 
@@ -461,6 +480,7 @@ export const TripDataProvider: React.FC<{ children: ReactNode }> = ({ children }
       data,
       updateParticipant,
       assignChef,
+      assignHelper,
       assignDishWasher,
       voteDrink,
       addCommunityItem,

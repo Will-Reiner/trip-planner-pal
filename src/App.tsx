@@ -10,6 +10,8 @@ import Gastronomia from "./pages/Gastronomia";
 import Itens from "./pages/Itens";
 import Experience from "./pages/Experience";
 import Perfil from "./pages/Perfil";
+import ListaDeMercado from "./pages/ListaDeMercado";
+import Custos from "./pages/Custos";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -46,6 +48,22 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <Itens />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/lista-de-mercado" 
+        element={
+          <ProtectedRoute>
+            <ListaDeMercado />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/custos" 
+        element={
+          <ProtectedRoute>
+            <Custos />
           </ProtectedRoute>
         } 
       />
