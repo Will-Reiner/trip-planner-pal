@@ -8,12 +8,15 @@ export const getAllMeals = async (req: Request, res: Response) => {
         m.*,
         c.nome as cook_nome,
         c.avatar_url as cook_avatar,
+        h.nome as helper_nome,
+        h.avatar_url as helper_avatar,
         d1.nome as dishwasher1_nome,
         d1.avatar_url as dishwasher1_avatar,
         d2.nome as dishwasher2_nome,
         d2.avatar_url as dishwasher2_avatar
       FROM meals m
       LEFT JOIN users c ON m.cook_id = c.id
+      LEFT JOIN users h ON m.helper_id = h.id
       LEFT JOIN users d1 ON m.dishwasher1_id = d1.id
       LEFT JOIN users d2 ON m.dishwasher2_id = d2.id
       ORDER BY m.data, 
@@ -39,12 +42,15 @@ export const getMealById = async (req: Request, res: Response) => {
         m.*,
         c.nome as cook_nome,
         c.avatar_url as cook_avatar,
+        h.nome as helper_nome,
+        h.avatar_url as helper_avatar,
         d1.nome as dishwasher1_nome,
         d1.avatar_url as dishwasher1_avatar,
         d2.nome as dishwasher2_nome,
         d2.avatar_url as dishwasher2_avatar
       FROM meals m
       LEFT JOIN users c ON m.cook_id = c.id
+      LEFT JOIN users h ON m.helper_id = h.id
       LEFT JOIN users d1 ON m.dishwasher1_id = d1.id
       LEFT JOIN users d2 ON m.dishwasher2_id = d2.id
       WHERE m.id = $1
@@ -63,7 +69,7 @@ export const getMealById = async (req: Request, res: Response) => {
 
 export const createMeal = async (req: Request, res: Response) => {
   try {
-    const { data, tipo_refeicao, ingredientes, cook_id, dishwasher1_id, dishwasher2_id } = req.body;
+    const { data, tipo_refeicao, nome_refeicao, ingredientes, cook_id, helper_id, dishwasher1_id, dishwasher2_id } = req.body;
     
     if (!data || !tipo_refeicao) {
       return res.status(400).json({ 
@@ -80,10 +86,10 @@ export const createMeal = async (req: Request, res: Response) => {
     }
     
     const result = await pool.query(
-      `INSERT INTO meals (data, tipo_refeicao, ingredientes, cook_id, dishwasher1_id, dishwasher2_id) 
-       VALUES ($1, $2, $3, $4, $5, $6) 
+      `INSERT INTO meals (data, tipo_refeicao, nome_refeicao, ingredientes, cook_id, helper_id, dishwasher1_id, dishwasher2_id) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
        RETURNING *`,
-      [data, tipo_refeicao, ingredientes, cook_id, dishwasher1_id, dishwasher2_id]
+      [data, tipo_refeicao, nome_refeicao, ingredientes, cook_id, helper_id, dishwasher1_id, dishwasher2_id]
     );
     
     res.status(201).json({ success: true, data: result.rows[0] });
@@ -101,6 +107,36 @@ export const createMeal = async (req: Request, res: Response) => {
   }
 };
 
+export const updateMeal = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { nome_refeicao, ingredientes, cook_id, helper_id, dishwasher1_id, dishwasher2_id } = req.body;
+    
+    const result = await pool.query(
+      `UPDATE meals 
+       SET nome_refeicao = COALESCE($1, nome_refeicao),
+           ingredientes = COALESCE($2, ingredientes),
+           cook_id = COALESCE($3, cook_id),
+           helper_id = COALESCE($4, helper_id),
+           dishwasher1_id = COALESCE($5, dishwasher1_id),
+           dishwasher2_id = COALESCE($6, dishwasher2_id),
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = $7
+       RETURNING *`,
+      [nome_refeicao, ingredientes, cook_id, helper_id, dishwasher1_id, dishwasher2_id, id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Refeição não encontrada' });
+    }
+    
+    res.json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    console.error('Erro ao atualizar refeição:', error);
+    res.status(500).json({ success: false, error: 'Erro ao atualizar refeição' });
+  }
+};
+
 // Rota PATCH /claim-role - Preencher vagas vazias em refeições
 export const claimRole = async (req: Request, res: Response) => {
   const client = await pool.connect();
@@ -115,10 +151,10 @@ export const claimRole = async (req: Request, res: Response) => {
       });
     }
     
-    if (!['cook', 'dishwasher1', 'dishwasher2'].includes(role)) {
+    if (!['cook', 'helper', 'dishwasher1', 'dishwasher2'].includes(role)) {
       return res.status(400).json({ 
         success: false, 
-        error: 'Role inválido. Use: cook, dishwasher1 ou dishwasher2' 
+        error: 'Role inválido. Use: cook, helper, dishwasher1 ou dishwasher2' 
       });
     }
     

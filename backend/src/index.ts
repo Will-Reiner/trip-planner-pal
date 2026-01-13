@@ -10,6 +10,10 @@ import mealsRoutes from './routes/meals';
 import drinksRoutes from './routes/drinks';
 import checklistRoutes from './routes/checklist';
 import experienceRoutes from './routes/experience';
+import marketItemsRoutes from './routes/marketItems';
+import mealIngredientsRoutes from './routes/mealIngredients';
+import expensesRoutes from './routes/expenses';
+import ridesRoutes from './routes/rides';
 
 dotenv.config();
 
@@ -22,8 +26,8 @@ app.use(cors({
   origin: ['http://localhost:5173', 'http://localhost:8080', 'http://localhost:3000', 'https://rebolahub.astraflow.io', 'https://tripback.astraflow.io'],
   credentials: true
 }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Middleware de logging
 app.use((req: Request, res: Response, next: NextFunction) => {
@@ -47,6 +51,10 @@ app.use('/api/meals', mealsRoutes);
 app.use('/api/drinks', drinksRoutes);
 app.use('/api/checklist', checklistRoutes);
 app.use('/api/experience', experienceRoutes);
+app.use('/api/market-items', marketItemsRoutes);
+app.use('/api/meal-ingredients', mealIngredientsRoutes);
+app.use('/api/finances', expensesRoutes);
+app.use('/api/rides', ridesRoutes);
 
 // Rota não encontrada
 app.use((req: Request, res: Response) => {

@@ -50,12 +50,16 @@ export interface Meal {
   id: number;
   data: string;
   tipo_refeicao: 'cafe' | 'almoco' | 'jantar';
+  nome_refeicao?: string;
   ingredientes: string[];
   cook_id: number | null;
+  helper_id: number | null;
   dishwasher1_id: number | null;
   dishwasher2_id: number | null;
   cook_nome?: string;
   cook_avatar?: string;
+  helper_nome?: string;
+  helper_avatar?: string;
   dishwasher1_nome?: string;
   dishwasher1_avatar?: string;
   dishwasher2_nome?: string;
@@ -133,7 +137,7 @@ export const createMeal = async (mealData: {
   return response.data.data;
 };
 
-export const claimMealRole = async (mealId: number, role: 'cook' | 'dishwasher1' | 'dishwasher2', userId: number) => {
+export const claimMealRole = async (mealId: number, role: 'cook' | 'helper' | 'dishwasher1' | 'dishwasher2', userId: number) => {
   const response = await api.patch<{ success: boolean; data: Meal }>('/meals/claim-role', {
     meal_id: mealId,
     role,
