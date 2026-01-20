@@ -86,19 +86,31 @@ export const createRide = async (req: Request, res: Response) => {
     
     // Adicionar passageiros
     if (passageiros && Array.isArray(passageiros) && passageiros.length > 0) {
+      // Calcular valor individual (motorista + passageiros)
+      const totalPessoas = passageiros.length + 1; // +1 para o motorista
+      const valorIndividual = valor_gasolina ? (parseFloat(valor_gasolina.toString()) / totalPessoas) : null;
+      
       for (const p of passageiros) {
         await client.query(
           'INSERT INTO ride_passengers (ride_id, user_id, contribuicao) VALUES ($1, $2, $3)',
-          [ride.id, p.user_id, p.contribuicao || null]
+          [ride.id, p.user_id, valorIndividual]
         );
         
         // Se criou despesa, adicionar passageiro na despesa também
-        if (expense_id) {
+        if (expense_id && valorIndividual) {
           await client.query(
             'INSERT INTO expense_participants (expense_id, user_id, valor_individual) VALUES ($1, $2, $3)',
-            [expense_id, p.user_id, p.contribuicao || null]
+            [expense_id, p.user_id, valorIndividual]
           );
         }
+      }
+      
+      // Adicionar motorista como participante da despesa
+      if (expense_id && valorIndividual) {
+        await client.query(
+          'INSERT INTO expense_participants (expense_id, user_id, valor_individual) VALUES ($1, $2, $3)',
+          [expense_id, motorista_id, valorIndividual]
+        );
       }
     }
     
@@ -177,22 +189,37 @@ export const updateRide = async (req: Request, res: Response) => {
     if (passageiros && Array.isArray(passageiros)) {
       await client.query('DELETE FROM ride_passengers WHERE ride_id = $1', [id]);
       
+      // Calcular valor individual (motorista + passageiros)
+      const totalPessoas = passageiros.length + 1; // +1 para o motorista
+      const valorIndividual = valor_gasolina ? (parseFloat(valor_gasolina.toString()) / totalPessoas) : null;
+      
       for (const p of passageiros) {
         await client.query(
           'INSERT INTO ride_passengers (ride_id, user_id, contribuicao) VALUES ($1, $2, $3)',
-          [id, p.user_id, p.contribuicao || null]
+          [id, p.user_id, valorIndividual]
         );
         
         // Atualizar participantes da despesa se existe
-        if (expense_id) {
+        if (expense_id && valorIndividual) {
           await client.query(
             `INSERT INTO expense_participants (expense_id, user_id, valor_individual)
              VALUES ($1, $2, $3)
              ON CONFLICT (expense_id, user_id) 
              DO UPDATE SET valor_individual = $3`,
-            [expense_id, p.user_id, p.contribuicao || null]
+            [expense_id, p.user_id, valorIndividual]
           );
         }
+      }
+      
+      // Adicionar motorista como participante da despesa
+      if (expense_id && valorIndividual) {
+        await client.query(
+          `INSERT INTO expense_participants (expense_id, user_id, valor_individual)
+           VALUES ($1, $2, $3)
+           ON CONFLICT (expense_id, user_id) 
+           DO UPDATE SET valor_individual = $3`,
+          [expense_id, ride.motorista_id, valorIndividual]
+        );
       }
     }
     
