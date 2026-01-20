@@ -1,9 +1,10 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { UtensilsCrossed, ListChecks, ShoppingCart, DollarSign, Sparkles, Users, Trophy } from 'lucide-react';
+import { UtensilsCrossed, ListChecks, ShoppingCart, DollarSign, Car, Users, Trophy } from 'lucide-react';
 
 const navItems = [
   { path: '/gastronomia', icon: UtensilsCrossed, label: 'Gastro' },
   { path: '/lista-de-mercado', icon: ShoppingCart, label: 'Mercado' },
+  { path: '/caronas', icon: Car, label: 'Caronas' },
   { path: '/custos', icon: DollarSign, label: 'Custos' },
   { path: '/itens', icon: ListChecks, label: 'Itens' },
   { path: '/perfil', icon: Users, label: 'Perfil' },
@@ -16,18 +17,12 @@ const BottomNav = () => {
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border z-50">
       <div className="flex justify-around items-center h-16 max-w-md mx-auto">
-        {navItems.map(({ path, icon: Icon, label, external }) => {
+        {navItems.map(({ path, icon: Icon, label }) => {
           const isActive = location.pathname === path;
           return (
             <button
               key={path}
-              onClick={() => {
-                if (external) {
-                  window.open(path, '_blank');
-                } else {
-                  navigate(path);
-                }
-              }}
+              onClick={() => navigate(path)}
               className={`flex flex-col items-center justify-center gap-1 px-4 py-2 transition-all duration-200 ${
                 isActive
                   ? 'text-primary scale-110'

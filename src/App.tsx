@@ -11,7 +11,8 @@ import Itens from "./pages/Itens";
 import Experience from "./pages/Experience";
 import Perfil from "./pages/Perfil";
 import ListaDeMercado from "./pages/ListaDeMercado";
-import Custos from "./pages/Custos";
+import Custos from "./pages/CustosNew";
+import Caronas from "./pages/Caronas";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -64,6 +65,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <Custos />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/caronas" 
+        element={
+          <ProtectedRoute>
+            <Caronas />
           </ProtectedRoute>
         } 
       />

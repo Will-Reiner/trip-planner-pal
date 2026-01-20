@@ -316,6 +316,46 @@ export const getDebtsSummary = async (req: Request, res: Response) => {
   }
 };
 
+export const updateExpense = async (req: Request, res: Response) => {
+  const client = await pool.connect();
+  try {
+    const { id } = req.params;
+    const { descricao, valor_real, category_id, participantes } = req.body;
+    
+    await client.query('BEGIN');
+    
+    await client.query(
+      `UPDATE expenses 
+       SET descricao = COALESCE($1, descricao),
+           valor_real = COALESCE($2, valor_real),
+           category_id = COALESCE($3, category_id),
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = $4`,
+      [descricao, valor_real, category_id, id]
+    );
+    
+    if (participantes && Array.isArray(participantes)) {
+      await client.query('DELETE FROM expense_participants WHERE expense_id = $1', [id]);
+      
+      for (const userId of participantes) {
+        await client.query(
+          'INSERT INTO expense_participants (expense_id, user_id) VALUES ($1, $2)',
+          [id, userId]
+        );
+      }
+    }
+    
+    await client.query('COMMIT');
+    res.json({ success: true, message: 'Despesa atualizada' });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Erro ao atualizar despesa:', error);
+    res.status(500).json({ success: false, error: 'Erro ao atualizar despesa' });
+  } finally {
+    client.release();
+  }
+};
+
 export const deleteExpense = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;

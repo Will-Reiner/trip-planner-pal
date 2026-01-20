@@ -254,50 +254,48 @@ CREATE TRIGGER update_expenses_updated_at BEFORE UPDATE ON expenses
 CREATE TRIGGER update_rides_updated_at BEFORE UPDATE ON rides
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
--- Dados de exemplo para teste
-INSERT INTO users (nome, avatar_url, titulo_engracado, senha) VALUES
-    ('João Silva', 'https://i.pravatar.cc/150?img=1', 'Chef Confusão', '123456'),
-    ('Maria Santos', 'https://i.pravatar.cc/150?img=2', 'Rainha da Louça', '123456'),
-    ('Pedro Oliveira', 'https://i.pravatar.cc/150?img=3', 'Mestre das Compras', '123456'),
-    ('Ana Costa', 'https://i.pravatar.cc/150?img=4', 'DJ da Viagem', '123456'),
-    ('Carlos Souza', 'https://i.pravatar.cc/150?img=5', 'Motorista Oficial', '123456');
+-- ========================================
+-- DADOS INICIAIS PARA PRODUÇÃO
+-- ========================================
 
-INSERT INTO drinks_poll (categoria, nome_bebida, votos) VALUES
-    ('alc', 'Cerveja', 5),
-    ('alc', 'Vinho', 8),
-    ('alc', 'Caipirinha', 12),
-    ('non-alc', 'Refrigerante', 7),
-    ('non-alc', 'Suco Natural', 10),
-    ('non-alc', 'Água com Gás', 3);
+-- 1. USUÁRIOS DA GALERA
+INSERT INTO users (nome, titulo_engracado) VALUES
+('Will', 'Sommelier de Aluguel'),
+('Lumi', 'Fiscal de Louça'),
+('Dlima', 'Mestre do Braseiro'),
+('Volpi', 'DJ Oficial do Rolê'),
+('Cams', 'Rainha do Open Bar'),
+('Rafa', 'Inimigo do Fim'),
+('Kau', 'Vegetariana da Galera'),
+('Jamal', 'Segurança do Cooler'),
+('Juliana', 'Crítica Gastronômica'),
+('Paula', 'Expert em Caipirinha'),
+('Flores', 'Vibe Positiva'),
+('Yuri', 'O Cara dos Shots'),
+('Ana', 'Gerente de Entretenimento'),
+('Bia', 'Dorminhoca do Grupo'),
+('Luana', 'Primeira a Chegar'),
+('Tamara', 'La policiaaaaa'),
+('Amigo da Bia', 'Um amigo'),
+('Amigo da Lumi', 'Dois amigo');
 
-INSERT INTO checklist (categoria, descricao, owner_id, completed) VALUES
-    ('item', 'Protetor solar', NULL, FALSE),
-    ('item', 'Repelente', NULL, FALSE),
-    ('tarefa', 'Comprar mantimentos', 3, FALSE),
-    ('tarefa', 'Verificar pneus do carro', 5, TRUE),
-    ('nao_esqueca', 'Levar carregador de celular', NULL, FALSE);
-
-INSERT INTO experience (tipo, conteudo, autor_id, votos) VALUES
-    ('frase', 'A vida é uma viagem, aproveite cada parada!', 1, 15),
-    ('tema_festa', 'Festa Tropical', 4, 8),
-    ('tema_festa', 'Anos 80', 2, 12),
-    ('frase', 'Viajar é a única coisa que você compra e te torna mais rico', 3, 20);
-
-INSERT INTO market_items (nome, categoria, quantidade, unidade, valor_por_porcao, tamanho_porcao, adicionado_por_id, observacoes) VALUES
-    ('Picanha', 'acougue', 3.0, 'kg', 89.90, '1kg', 1, 'Corte especial'),
-    ('Alface', 'hortifruti', 2.0, 'unidade', 3.50, '1 unidade', 1, 'Americana'),
-    ('Tomate', 'hortifruti', 1.5, 'kg', 6.90, '1kg', 1, NULL),
-    ('Cerveja', 'bebidas', 24.0, 'lata', 2.50, '350ml', 1, 'Gelada'),
-    ('Arroz', 'mercearia', 5.0, 'kg', 4.50, '1kg', 1, 'Tipo 1'),
-    ('Feijão', 'mercearia', 2.0, 'kg', 7.90, '1kg', 1, 'Preto'),
-    ('Papel Toalha', 'limpeza', 6.0, 'unidade', 3.20, '1 rolo', 1, NULL);
+-- 2. CADASTRO DE BEBIDAS (DRINKS POLL)
+INSERT INTO drinks_poll (categoria, nome_bebida) VALUES
+('alc', 'Cerveja'),
+('alc', 'Vinho'),
+('alc', 'Caipirinha'),
+('alc', 'Shots'),
+('non-alc', 'Suco'),
+('non-alc', 'Refri Zero'),
+('non-alc', 'Refri Normal'),
+('non-alc', 'Agua com Gas');
 
 INSERT INTO expense_categories (nome, icone, cor, is_system) VALUES
-    ('Aluguel', '🏠', '#3b82f6', true),
-    ('Mercado', '🛒', '#10b981', true),
-    ('Passeios', '🎢', '#f59e0b', true),
-    ('Gasolina', '⛽', '#ef4444', true),
-    ('Restaurante', '🍽️', '#8b5cf6', true);
+    ('Aluguel', NULL, '#3b82f6', true),
+    ('Mercado', NULL, '#10b981', true),
+    ('Passeios', NULL, '#f59e0b', true),
+    ('Gasolina', NULL, '#ef4444', true),
+    ('Restaurante', NULL, '#8b5cf6', true);
 
 -- View para estatísticas de refeições
 CREATE VIEW meal_statistics AS
