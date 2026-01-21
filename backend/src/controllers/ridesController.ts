@@ -329,6 +329,7 @@ export const joinRide = async (req: Request, res: Response) => {
 };
 
 export const leaveRide = async (req: Request, res: Response) => {
+  const client = await pool.connect();
   try {
     const { id } = req.params;
     const { user_id } = req.body;
@@ -337,19 +338,43 @@ export const leaveRide = async (req: Request, res: Response) => {
       return res.status(400).json({ success: false, error: 'user_id é obrigatório' });
     }
 
+    await client.query('BEGIN');
+
+    // Buscar informações da carona
+    const rideResult = await client.query('SELECT * FROM rides WHERE id = $1', [id]);
+    if (rideResult.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ success: false, error: 'Carona não encontrada' });
+    }
+
+    const ride = rideResult.rows[0];
+
     // Remover passageiro
-    const result = await pool.query(
+    const result = await client.query(
       'DELETE FROM ride_passengers WHERE ride_id = $1 AND user_id = $2 RETURNING *',
       [id, user_id]
     );
 
     if (result.rows.length === 0) {
+      await client.query('ROLLBACK');
       return res.status(404).json({ success: false, error: 'Você não está nesta carona' });
     }
 
+    // Remover também da despesa de gasolina se existir
+    if (ride.expense_id) {
+      await client.query(
+        'DELETE FROM expense_participants WHERE expense_id = $1 AND user_id = $2',
+        [ride.expense_id, user_id]
+      );
+    }
+
+    await client.query('COMMIT');
     res.json({ success: true, message: 'Você saiu da carona!' });
   } catch (error) {
+    await client.query('ROLLBACK');
     console.error('Erro ao sair da carona:', error);
     res.status(500).json({ success: false, error: 'Erro ao sair da carona' });
+  } finally {
+    client.release();
   }
 };

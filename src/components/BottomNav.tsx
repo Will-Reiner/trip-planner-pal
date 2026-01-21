@@ -1,9 +1,9 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { UtensilsCrossed, ListChecks, ShoppingCart, DollarSign, Car, Users, Trophy } from 'lucide-react';
+import { UtensilsCrossed, ListChecks, DollarSign, Car, Users, Trophy } from 'lucide-react';
 
 const navItems = [
   { path: '/gastronomia', icon: UtensilsCrossed, label: 'Gastro' },
-  { path: '/lista-de-mercado', icon: ShoppingCart, label: 'Mercado' },
+  { path: '/experience', icon: Trophy, label: 'Vibe' },
   { path: '/caronas', icon: Car, label: 'Caronas' },
   { path: '/custos', icon: DollarSign, label: 'Custos' },
   { path: '/itens', icon: ListChecks, label: 'Itens' },

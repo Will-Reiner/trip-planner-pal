@@ -320,18 +320,18 @@ export const updateExpense = async (req: Request, res: Response) => {
   const client = await pool.connect();
   try {
     const { id } = req.params;
-    const { descricao, valor_real, category_id, participantes } = req.body;
+    const { descricao, valor_total, category_id, participantes } = req.body;
     
     await client.query('BEGIN');
     
     await client.query(
       `UPDATE expenses 
        SET descricao = COALESCE($1, descricao),
-           valor_real = COALESCE($2, valor_real),
+           valor_total = COALESCE($2, valor_total),
            category_id = COALESCE($3, category_id),
            updated_at = CURRENT_TIMESTAMP
        WHERE id = $4`,
-      [descricao, valor_real, category_id, id]
+      [descricao, valor_total, category_id, id]
     );
     
     if (participantes && Array.isArray(participantes)) {

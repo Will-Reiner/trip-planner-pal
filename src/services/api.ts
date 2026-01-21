@@ -81,6 +81,8 @@ export interface ChecklistItem {
   completed: boolean;
   owner_nome?: string;
   owner_avatar?: string;
+  is_checked_by_user?: boolean;
+  created_by_id?: number | null;
 }
 
 export interface Experience {
@@ -168,8 +170,9 @@ export const voteDrink = async (drinkId: number) => {
 };
 
 // API Calls - Checklist
-export const getChecklist = async () => {
-  const response = await api.get<{ success: boolean; data: ChecklistItem[] }>('/checklist');
+export const getChecklist = async (userId?: number) => {
+  const url = userId ? `/checklist?user_id=${userId}` : '/checklist';
+  const response = await api.get<{ success: boolean; data: ChecklistItem[] }>(url);
   return response.data.data;
 };
 
@@ -197,11 +200,18 @@ export const deleteChecklistItem = async (id: number) => {
   return response.data;
 };
 
-export const claimChecklistItem = async (id: number, userId: number) => {
+export const claimChecklistItem = async (id: number, userId: number | null) => {
   const response = await api.patch<{ success: boolean; data: ChecklistItem }>(`/checklist/${id}/claim`, {
     user_id: userId,
   });
   return response.data.data;
+};
+
+export const toggleUserChecklistItem = async (id: number, userId: number) => {
+  const response = await api.patch<{ success: boolean; checked: boolean }>(`/checklist/${id}/toggle`, {
+    user_id: userId,
+  });
+  return { checked: response.data.checked };
 };
 
 // API Calls - Experience

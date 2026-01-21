@@ -2,9 +2,10 @@ import { useUser } from '../contexts/UserContext';
 import { useTripData } from '../contexts/TripDataContext';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
-import { User, LogOut, Camera, Heart } from 'lucide-react';
+import { User, LogOut, Camera, Heart, Crown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { useState } from 'react';
 import api from '@/services/api';
 
@@ -14,9 +15,16 @@ const Perfil = () => {
   const navigate = useNavigate();
   const [uploading, setUploading] = useState(false);
 
+  // Obter role do localStorage
+  const userDataString = localStorage.getItem('trip_planner_user');
+  const userData = userDataString ? JSON.parse(userDataString) : null;
+  const isAdmin = userData?.role === 'admin';
+
   const handleLogout = () => {
     setCurrentUser(null);
-    navigate('/');
+    localStorage.removeItem('trip_planner_token');
+    localStorage.removeItem('trip_planner_user');
+    navigate('/login');
   };
 
   const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -128,11 +136,17 @@ const Perfil = () => {
             />
           </label>
 
-          <h2 className="text-2xl font-bold text-foreground mt-4">
+          <h2 className="text-2xl font-bold text-foreground mt-4 flex items-center justify-center gap-2">
             {currentUser?.name}
+            {isAdmin && (
+              <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white border-0 shadow-lg">
+                <Crown className="w-4 h-4 mr-1" />
+                ADMIN
+              </Badge>
+            )}
           </h2>
           <p className="text-muted-foreground mt-1">
-            Participante da Trip 🌴
+            {isAdmin ? 'Organizador da Trip 👑' : 'Participante da Trip 🌴'}
           </p>
         </div>
 
@@ -165,7 +179,7 @@ const Perfil = () => {
           className="w-full h-14 text-lg font-semibold rounded-2xl"
         >
           <LogOut className="w-5 h-5 mr-2" />
-          Trocar de Usuário
+          Sair
         </Button>
       </div>
 

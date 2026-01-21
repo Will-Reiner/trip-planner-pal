@@ -373,25 +373,42 @@ const CustosNew = () => {
           </div>
 
           <div className="space-y-2">
-            {myDebts.map((debt) => (
-              <div key={debt.categoria} className="flex items-center justify-between p-2 rounded bg-background">
-                <span className="font-medium">{debt.categoria}</span>
-                <div className="text-right">
-                  {showEstimates ? (
-                    <>
-                      <div className="text-sm">
-                        <span className="text-orange-600 font-medium">R$ {debt.real.toFixed(2)}</span>
-                        {debt.estimado > 0 && (
-                          <span className="text-blue-600 ml-2">+ R$ {debt.estimado.toFixed(2)}</span>
-                        )}
+            {myDebts.map((debt) => {
+              // Encontrar pagadores para esta categoria
+              const pagadoresNaCategoria = expenses
+                .filter(e => e.categoria_nome === debt.categoria && 
+                        e.participantes?.some(p => p.user_id === currentUser?.id) &&
+                        e.pagador_id !== currentUser?.id)
+                .map(e => ({ nome: e.pagador_nome, id: e.pagador_id }))
+                .filter((v, i, a) => a.findIndex(t => t.id === v.id) === i); // unique
+
+              return (
+                <div key={debt.categoria} className="flex items-center justify-between p-2 rounded bg-background">
+                  <div className="flex-1">
+                    <div className="font-medium">{debt.categoria}</div>
+                    {pagadoresNaCategoria.length > 0 && (
+                      <div className="text-xs text-muted-foreground">
+                        Pagar para: {pagadoresNaCategoria.map(p => p.nome).join(', ')}
                       </div>
-                    </>
-                  ) : (
-                    <span className="font-medium text-orange-600">R$ {debt.real.toFixed(2)}</span>
-                  )}
+                    )}
+                  </div>
+                  <div className="text-right">
+                    {showEstimates ? (
+                      <>
+                        <div className="text-sm">
+                          <span className="text-orange-600 font-medium">R$ {debt.real.toFixed(2)}</span>
+                          {debt.estimado > 0 && (
+                            <span className="text-blue-600 ml-2">+ R$ {debt.estimado.toFixed(2)}</span>
+                          )}
+                        </div>
+                      </>
+                    ) : (
+                      <span className="font-medium text-orange-600">R$ {debt.real.toFixed(2)}</span>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 

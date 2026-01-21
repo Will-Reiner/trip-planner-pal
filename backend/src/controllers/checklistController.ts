@@ -3,15 +3,27 @@ import pool from '../config/database';
 
 export const getAllChecklist = async (req: Request, res: Response) => {
   try {
+    const { user_id } = req.query;
+    
     const result = await pool.query(`
       SELECT 
         c.*,
         u.nome as owner_nome,
-        u.avatar_url as owner_avatar
+        u.avatar_url as owner_avatar,
+        creator.nome as created_by_nome,
+        CASE 
+          WHEN c.categoria = 'nao_esqueca' AND $1::INTEGER IS NOT NULL 
+          THEN EXISTS(
+            SELECT 1 FROM user_checklist_checked 
+            WHERE checklist_id = c.id AND user_id = $1 AND checked = TRUE
+          )
+          ELSE c.completed 
+        END as is_checked_by_user
       FROM checklist c
       LEFT JOIN users u ON c.owner_id = u.id
+      LEFT JOIN users creator ON c.created_by_id = creator.id
       ORDER BY c.completed, c.categoria, c.created_at
-    `);
+    `, [user_id || null]);
     
     res.json({ success: true, data: result.rows });
   } catch (error) {
@@ -51,7 +63,7 @@ export const getChecklistByCategory = async (req: Request, res: Response) => {
 
 export const createChecklistItem = async (req: Request, res: Response) => {
   try {
-    const { categoria, descricao, owner_id } = req.body;
+    const { categoria, descricao, owner_id, created_by_id } = req.body;
     
     if (!categoria || !descricao) {
       return res.status(400).json({ 
@@ -68,8 +80,8 @@ export const createChecklistItem = async (req: Request, res: Response) => {
     }
     
     const result = await pool.query(
-      'INSERT INTO checklist (categoria, descricao, owner_id) VALUES ($1, $2, $3) RETURNING *',
-      [categoria, descricao, owner_id]
+      'INSERT INTO checklist (categoria, descricao, owner_id, created_by_id) VALUES ($1, $2, $3, $4) RETURNING *',
+      [categoria, descricao, owner_id, created_by_id]
     );
     
     res.status(201).json({ success: true, data: result.rows[0] });
@@ -108,15 +120,30 @@ export const updateChecklistItem = async (req: Request, res: Response) => {
 export const deleteChecklistItem = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+    const { user_id } = req.body;
+    
+    // Verificar se o item existe e quem criou
+    const checkResult = await pool.query(
+      'SELECT created_by_id FROM checklist WHERE id = $1',
+      [id]
+    );
+    
+    if (checkResult.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Item não encontrado' });
+    }
+    
+    // Verificar se quem está deletando é quem criou
+    if (user_id && checkResult.rows[0].created_by_id && checkResult.rows[0].created_by_id !== parseInt(user_id)) {
+      return res.status(403).json({ 
+        success: false, 
+        error: 'Apenas quem criou o item pode deletá-lo' 
+      });
+    }
     
     const result = await pool.query(
       'DELETE FROM checklist WHERE id = $1 RETURNING *',
       [id]
     );
-    
-    if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, error: 'Item não encontrado' });
-    }
     
     res.json({ 
       success: true, 
@@ -137,11 +164,13 @@ export const claimChecklistItem = async (req: Request, res: Response) => {
     const { id } = req.params;
     const { user_id } = req.body;
     
-    if (!user_id) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'user_id é obrigatório' 
-      });
+    // Se user_id for null ou undefined, remover responsabilidade
+    if (user_id === null || user_id === undefined) {
+      await client.query(
+        'UPDATE checklist SET owner_id = NULL WHERE id = $1',
+        [id]
+      );
+      return res.json({ success: true, message: 'Responsabilidade removida' });
     }
     
     await client.query('BEGIN');
@@ -185,5 +214,55 @@ export const claimChecklistItem = async (req: Request, res: Response) => {
     res.status(500).json({ success: false, error: 'Erro ao reivindicar item' });
   } finally {
     client.release();
+  }
+};
+
+// Toggle individual do checklist (para essenciais - categoria 'nao_esqueca')
+export const toggleUserChecklistItem = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { user_id } = req.body;
+    
+    if (!user_id) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'user_id é obrigatório' 
+      });
+    }
+    
+    // Verificar se já existe um registro
+    const existingCheck = await pool.query(
+      'SELECT * FROM user_checklist_checked WHERE user_id = $1 AND checklist_id = $2',
+      [user_id, id]
+    );
+    
+    if (existingCheck.rows.length > 0) {
+      // Toggle o estado
+      const newCheckedState = !existingCheck.rows[0].checked;
+      await pool.query(
+        'UPDATE user_checklist_checked SET checked = $1, checked_at = CURRENT_TIMESTAMP WHERE user_id = $2 AND checklist_id = $3',
+        [newCheckedState, user_id, id]
+      );
+      res.json({ 
+        success: true, 
+        checked: newCheckedState,
+        message: newCheckedState ? 'Item marcado' : 'Item desmarcado'
+      });
+    } else {
+      // Criar novo registro
+      await pool.query(
+        'INSERT INTO user_checklist_checked (user_id, checklist_id, checked) VALUES ($1, $2, TRUE)',
+        [user_id, id]
+      );
+      res.json({ 
+        success: true, 
+        checked: true,
+        message: 'Item marcado'
+      });
+    }
+    
+  } catch (error) {
+    console.error('Erro ao toggle checklist item:', error);
+    res.status(500).json({ success: false, error: 'Erro ao atualizar item' });
   }
 };

@@ -3,7 +3,7 @@ import { useTripData } from '../contexts/TripDataContext';
 import { useUser } from '../contexts/UserContext';
 import BottomNav from '../components/BottomNav';
 import { getUserColor } from '../lib/userColors';
-import { Package, ClipboardList, AlertCircle, Plus, UserCheck, Check } from 'lucide-react';
+import { Package, ClipboardList, AlertCircle, Plus, UserCheck, Check, X, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
 
 const Itens = () => {
-  const { data, addCommunityItem, assignCommunityItem, addTask, assignTask, addEssential, toggleEssential } = useTripData();
+  const { data, addCommunityItem, assignCommunityItem, addTask, assignTask, addEssential, toggleEssential, deleteEssential } = useTripData();
   const { currentUser } = useUser();
   const [newItem, setNewItem] = useState('');
   const [newTask, setNewTask] = useState('');
@@ -97,13 +97,25 @@ const Itens = () => {
                 >
                   <span className="font-medium text-foreground">{item.name}</span>
                   {item.assignee ? (
-                    <Badge 
-                      className="text-white"
-                      style={{ backgroundColor: getUserColor(item.assignee) }}
-                    >
-                      <UserCheck className="w-3 h-3 mr-1" />
-                      {getParticipantName(item.assignee)}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge 
+                        className="text-white"
+                        style={{ backgroundColor: getUserColor(item.assignee) }}
+                      >
+                        <UserCheck className="w-3 h-3 mr-1" />
+                        {getParticipantName(item.assignee)}
+                      </Badge>
+                      {item.assignee === currentUser?.id && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => assignCommunityItem(item.id, null)}
+                          className="h-6 w-6 p-0"
+                        >
+                          <X className="w-3 h-3" />
+                        </Button>
+                      )}
+                    </div>
                   ) : (
                     <Button
                       size="sm"
@@ -140,13 +152,25 @@ const Itens = () => {
                 >
                   <span className="font-medium text-foreground">{task.name}</span>
                   {task.assignee ? (
-                    <Badge 
-                      className="text-white"
-                      style={{ backgroundColor: getUserColor(task.assignee) }}
-                    >
-                      <UserCheck className="w-3 h-3 mr-1" />
-                      {getParticipantName(task.assignee)}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge 
+                        className="text-white"
+                        style={{ backgroundColor: getUserColor(task.assignee) }}
+                      >
+                        <UserCheck className="w-3 h-3 mr-1" />
+                        {getParticipantName(task.assignee)}
+                      </Badge>
+                      {task.assignee === currentUser?.id && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => assignTask(task.id, null)}
+                          className="h-6 w-6 p-0"
+                        >
+                          <X className="w-3 h-3" />
+                        </Button>
+                      )}
+                    </div>
                   ) : (
                     <Button
                       size="sm"
@@ -176,28 +200,51 @@ const Itens = () => {
               </Button>
             </div>
             <div className="space-y-2">
-              {data.essentials.map(essential => (
-                <div
-                  key={essential.id}
-                  className={`flex items-center gap-3 p-4 bg-card rounded-2xl border border-border transition-all ${
-                    essential.checked ? 'opacity-60' : ''
-                  }`}
-                >
-                  <Checkbox
-                    checked={essential.checked}
-                    onCheckedChange={() => toggleEssential(essential.id)}
-                    className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-                  />
-                  <span className={`font-medium text-foreground flex-1 ${
-                    essential.checked ? 'line-through' : ''
-                  }`}>
-                    {essential.name}
-                  </span>
-                  {essential.checked && (
-                    <Check className="w-4 h-4 text-primary" />
-                  )}
-                </div>
-              ))}
+              {data.essentials.map(essential => {
+                const isCheckedByUser = essential.is_checked_by_user || false;
+                const canDelete = essential.created_by_id === currentUser?.id;
+                
+                console.log(`Essential ${essential.id}:`, {
+                  is_checked_by_user: essential.is_checked_by_user,
+                  isCheckedByUser,
+                  created_by_id: essential.created_by_id,
+                  currentUserId: currentUser?.id,
+                  canDelete
+                });
+                
+                return (
+                  <div
+                    key={essential.id}
+                    className={`flex items-center gap-3 p-4 bg-card rounded-2xl border border-border transition-all ${
+                      isCheckedByUser ? 'opacity-60' : ''
+                    }`}
+                  >
+                    <Checkbox
+                      checked={isCheckedByUser}
+                      onCheckedChange={() => toggleEssential(essential.id)}
+                      className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                    />
+                    <span className={`font-medium text-foreground flex-1 ${
+                      isCheckedByUser ? 'line-through' : ''
+                    }`}>
+                      {essential.name}
+                    </span>
+                    {isCheckedByUser && (
+                      <Check className="w-4 h-4 text-primary" />
+                    )}
+                    {canDelete && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => deleteEssential(essential.id)}
+                        className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </TabsContent>
         </Tabs>

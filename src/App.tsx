@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { UserProvider, useUser } from "./contexts/UserContext";
 import { TripDataProvider } from "./contexts/TripDataContext";
+import Login from "./pages/Login";
 import Onboarding from "./pages/Onboarding";
 import Gastronomia from "./pages/Gastronomia";
 import Itens from "./pages/Itens";
@@ -18,23 +19,35 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { currentUser } = useUser();
+  const token = localStorage.getItem('trip_planner_token');
   
-  if (!currentUser) {
-    return <Navigate to="/" replace />;
+  if (!token) {
+    return <Navigate to="/login" replace />;
   }
   
   return <>{children}</>;
 };
 
 const AppRoutes = () => {
-  const { currentUser } = useUser();
+  const token = localStorage.getItem('trip_planner_token');
   
   return (
     <Routes>
       <Route 
+        path="/login" 
+        element={token ? <Navigate to="/onboarding" replace /> : <Login />} 
+      />
+      <Route 
         path="/" 
-        element={currentUser ? <Navigate to="/gastronomia" replace /> : <Onboarding />} 
+        element={<Navigate to={token ? "/gastronomia" : "/login"} replace />} 
+      />
+      <Route 
+        path="/onboarding" 
+        element={
+          <ProtectedRoute>
+            <Onboarding />
+          </ProtectedRoute>
+        } 
       />
       <Route 
         path="/gastronomia" 

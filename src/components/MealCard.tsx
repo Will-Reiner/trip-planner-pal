@@ -85,10 +85,19 @@ const MealCard: React.FC<MealCardProps> = ({ meal }) => {
 
   const getMealEmoji = (type: string) => {
     switch (type) {
-      case 'Café da Manhã': return '☕';
-      case 'Almoço': return '🍽️';
-      case 'Jantar': return '🌙';
+      case 'breakfast': return '☕';
+      case 'lunch': return '🍽️';
+      case 'dinner': return '🌙';
       default: return '🍴';
+    }
+  };
+
+  const getMealLabel = (type: string) => {
+    switch (type) {
+      case 'breakfast': return 'Café da Manhã';
+      case 'lunch': return 'Almoço';
+      case 'dinner': return 'Jantar';
+      default: return type;
     }
   };
 
@@ -200,7 +209,7 @@ const MealCard: React.FC<MealCardProps> = ({ meal }) => {
           <div className="flex items-center gap-3 flex-1">
             <span className="text-2xl">{getMealEmoji(meal.type)}</span>
             <div className="text-left flex-1">
-              <h3 className="font-semibold text-foreground">{meal.type}</h3>
+              <h3 className="font-semibold text-foreground">{getMealLabel(meal.type)}</h3>
               {isEditingName ? (
                 <div className="flex items-center gap-2 mt-1" onClick={(e) => e.stopPropagation()}>
                   <Input

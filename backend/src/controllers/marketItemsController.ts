@@ -93,21 +93,56 @@ export const updateMarketItem = async (req: Request, res: Response) => {
       comprado
     } = req.body;
     
-    const result = await pool.query(
-      `UPDATE market_items 
-       SET nome = COALESCE($1, nome),
-           categoria = COALESCE($2, categoria),
-           quantidade = COALESCE($3, quantidade),
-           unidade = COALESCE($4, unidade),
-           valor_por_porcao = COALESCE($5, valor_por_porcao),
-           tamanho_porcao = COALESCE($6, tamanho_porcao),
-           responsavel_id = COALESCE($7, responsavel_id),
-           observacoes = COALESCE($8, observacoes),
-           comprado = COALESCE($9, comprado)
-       WHERE id = $10
-       RETURNING *`,
-      [nome, categoria, quantidade, unidade, valor_por_porcao, tamanho_porcao, responsavel_id, observacoes, comprado, id]
-    );
+    // Usar um objeto para construir a query dinamicamente
+    const updates: string[] = [];
+    const values: any[] = [];
+    let paramIndex = 1;
+
+    if (nome !== undefined) {
+      updates.push(`nome = $${paramIndex++}`);
+      values.push(nome);
+    }
+    if (categoria !== undefined) {
+      updates.push(`categoria = $${paramIndex++}`);
+      values.push(categoria);
+    }
+    if (quantidade !== undefined) {
+      updates.push(`quantidade = $${paramIndex++}`);
+      values.push(quantidade);
+    }
+    if (unidade !== undefined) {
+      updates.push(`unidade = $${paramIndex++}`);
+      values.push(unidade);
+    }
+    if (valor_por_porcao !== undefined) {
+      updates.push(`valor_por_porcao = $${paramIndex++}`);
+      values.push(valor_por_porcao);
+    }
+    if (tamanho_porcao !== undefined) {
+      updates.push(`tamanho_porcao = $${paramIndex++}`);
+      values.push(tamanho_porcao);
+    }
+    if (responsavel_id !== undefined) {
+      updates.push(`responsavel_id = $${paramIndex++}`);
+      values.push(responsavel_id);
+    }
+    if (observacoes !== undefined) {
+      updates.push(`observacoes = $${paramIndex++}`);
+      values.push(observacoes);
+    }
+    if (comprado !== undefined) {
+      updates.push(`comprado = $${paramIndex++}`);
+      values.push(comprado);
+    }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ success: false, error: 'Nenhum campo para atualizar' });
+    }
+
+    values.push(id);
+    const query = `UPDATE market_items SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING *`;
+    
+    const result = await pool.query(query, values);
     
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, error: 'Item não encontrado' });
