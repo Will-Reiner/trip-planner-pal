@@ -9,6 +9,7 @@ import {
   deleteEstimate,
   getAllExpenses,
   createExpense,
+  updateExpense,
   confirmPayment,
   getDebtsSummary,
   deleteExpense
@@ -30,6 +31,7 @@ router.delete('/estimates/:id', deleteEstimate);
 // Expenses (Real)
 router.get('/expenses', getAllExpenses);
 router.post('/expenses', createExpense);
+router.patch('/expenses/:id', updateExpense);
 router.delete('/expenses/:id', deleteExpense);
 router.patch('/expenses/confirm-payment', confirmPayment);
 

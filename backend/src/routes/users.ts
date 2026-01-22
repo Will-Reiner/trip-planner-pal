@@ -3,7 +3,8 @@ import {
   getAllUsers, 
   getUserById, 
   createUser, 
-  updateUser 
+  updateUser,
+  deleteUser 
 } from '../controllers/usersController';
 
 const router = Router();
@@ -13,5 +14,6 @@ router.get('/:id', getUserById);
 router.post('/', createUser);
 router.patch('/:id', updateUser);
 router.put('/:id', updateUser);
+router.delete('/:id', deleteUser);
 
 export default router;

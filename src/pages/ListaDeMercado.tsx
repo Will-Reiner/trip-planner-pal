@@ -86,6 +86,7 @@ const ListaDeMercado = () => {
     categoria: 'mercearia',
     quantidade: 1,
     unidade_medida: 'unidade',
+    preco: '',
     valor_por_porcao: '',
     tamanho_porcao: '',
     observacoes: '',
@@ -101,13 +102,21 @@ const ListaDeMercado = () => {
       const response = await axios.get(`${API_URL}/market-items`);
       const itemsData = response.data.data || [];
       
+      // Normalizar valores numéricos (PostgreSQL pode retornar strings para DECIMAL)
+      const normalizedItems = itemsData.map((item: any) => ({
+        ...item,
+        quantidade: Number(item.quantidade) || 0,
+        valor_por_porcao: item.valor_por_porcao ? Number(item.valor_por_porcao) : undefined,
+        tamanho_porcao: item.tamanho_porcao ? Number(item.tamanho_porcao) : undefined,
+      }));
+      
       // Carregar as refeições para cada item
       const itemsWithMeals = await Promise.all(
-        itemsData.map(async (item: MarketItem) => {
+        normalizedItems.map(async (item: MarketItem) => {
           try {
             const mealsResponse = await axios.get(`${API_URL}/meal-ingredients/ingredient/${item.id}`);
             return { ...item, meals: mealsResponse.data.data || [] };
-          } catch {
+          } catch (error) {
             return { ...item, meals: [] };
           }
         })
@@ -121,6 +130,7 @@ const ListaDeMercado = () => {
         description: 'Não foi possível carregar a lista de mercado',
         variant: 'destructive',
       });
+      setItems([]); // Set empty array to prevent undefined errors
     } finally {
       setLoading(false);
     }
@@ -139,7 +149,7 @@ const ListaDeMercado = () => {
     try {
       await axios.post(`${API_URL}/market-items`, {
         ...formData,
-        valor_por_porcao: formData.valor_por_porcao ? parseFloat(formData.valor_por_porcao) : null,
+        valor_por_porcao: formData.preco ? parseFloat(formData.preco) : null,
         tamanho_porcao: formData.tamanho_porcao ? parseFloat(formData.tamanho_porcao) : null,
         adicionado_por_id: currentUser?.id,
       });
@@ -155,6 +165,7 @@ const ListaDeMercado = () => {
         categoria: 'mercearia',
         quantidade: 1,
         unidade_medida: 'unidade',
+        preco: '',
         valor_por_porcao: '',
         tamanho_porcao: '',
         observacoes: '',
@@ -196,6 +207,21 @@ const ListaDeMercado = () => {
     }
   };
 
+  const handleRemoveResponsibility = async (id: number) => {
+    try {
+      await axios.patch(`${API_URL}/market-items/${id}`, {
+        responsavel_id: null,
+      });
+      toast({
+        title: 'Responsabilidade removida',
+        description: 'Você não é mais responsável por este item',
+      });
+      loadItems();
+    } catch (error) {
+      console.error('Erro ao remover responsabilidade:', error);
+    }
+  };
+
   const handleDeleteItem = async (id: number) => {
     try {
       await axios.delete(`${API_URL}/market-items/${id}`);
@@ -212,13 +238,6 @@ const ListaDeMercado = () => {
   const filteredItems = selectedCategory === 'all' 
     ? items 
     : items.filter(item => item.categoria === selectedCategory);
-
-  const totalValue = items.reduce((acc, item) => {
-    if (item.valor_por_porcao && item.tamanho_porcao && item.quantidade) {
-      return acc + (item.valor_por_porcao / item.tamanho_porcao) * item.quantidade;
-    }
-    return acc;
-  }, 0);
 
   const purchasedCount = items.filter(i => i.comprado).length;
 
@@ -317,31 +336,17 @@ const ListaDeMercado = () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="grid gap-2">
-                      <Label htmlFor="valor">Valor (R$)</Label>
-                      <Input
-                        id="valor"
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={formData.valor_por_porcao}
-                        onChange={(e) => setFormData({ ...formData, valor_por_porcao: e.target.value })}
-                        placeholder="15.90"
-                      />
-                    </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="tamanho">Tamanho</Label>
-                      <Input
-                        id="tamanho"
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={formData.tamanho_porcao}
-                        onChange={(e) => setFormData({ ...formData, tamanho_porcao: e.target.value })}
-                        placeholder="1"
-                      />
-                    </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="preco">Preço Total (R$)</Label>
+                    <Input
+                      id="preco"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={formData.preco}
+                      onChange={(e) => setFormData({ ...formData, preco: e.target.value })}
+                      placeholder="Ex: 15.90"
+                    />
                   </div>
 
                   <div className="grid gap-2">
@@ -350,7 +355,7 @@ const ListaDeMercado = () => {
                       id="observacoes"
                       value={formData.observacoes}
                       onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })}
-                      placeholder="Marca específica, detalhes..."
+                      placeholder="Marca específica, detalhes, preço estimado..."
                       rows={3}
                     />
                   </div>
@@ -365,15 +370,6 @@ const ListaDeMercado = () => {
             <span>{items.length} itens</span>
             <span>•</span>
             <span>{purchasedCount} comprados</span>
-            {totalValue > 0 && (
-              <>
-                <span>•</span>
-                <span className="flex items-center gap-1">
-                  <DollarSign className="w-3 h-3" />
-                  R$ {totalValue.toFixed(2)}
-                </span>
-              </>
-            )}
           </div>
         </div>
       </div>
@@ -435,12 +431,17 @@ const ListaDeMercado = () => {
 
                   <div className="flex-1">
                     <div className="flex items-start justify-between mb-2">
-                      <div>
+                      <div className="flex-1">
                         <h3 className={`font-semibold ${item.comprado ? 'line-through' : ''}`}>
                           {item.nome}
                         </h3>
                         <p className="text-sm text-muted-foreground">
                           {item.quantidade} {item.unidade}
+                          {item.valor_por_porcao && (
+                            <span className="ml-2 font-medium text-primary">
+                              • R$ {Number(item.valor_por_porcao).toFixed(2)}
+                            </span>
+                          )}
                         </p>
                       </div>
                       <Button
@@ -464,12 +465,6 @@ const ListaDeMercado = () => {
                         {categories.find(c => c.value === item.categoria)?.emoji}{' '}
                         {categories.find(c => c.value === item.categoria)?.label.split(' ')[1]}
                       </Badge>
-
-                      {item.valor_por_porcao && item.tamanho_porcao && (
-                        <Badge variant="secondary" className="text-xs">
-                          R$ {((item.valor_por_porcao / item.tamanho_porcao) * item.quantidade).toFixed(2)}
-                        </Badge>
-                      )}
 
                       {item.meals && item.meals.length > 0 && (
                         item.meals.length === 1 ? (
@@ -501,9 +496,21 @@ const ListaDeMercado = () => {
                       )}
 
                       {item.responsavel_id ? (
-                        <Badge className="text-xs">
-                          👤 {item.responsavel_nome}
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          <Badge className="text-xs">
+                            👤 {item.responsavel_nome}
+                          </Badge>
+                          {item.responsavel_id === currentUser?.id && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleRemoveResponsibility(item.id)}
+                              className="h-6 w-6 p-0"
+                            >
+                              <X className="w-3 h-3" />
+                            </Button>
+                          )}
+                        </div>
                       ) : (
                         <Button
                           size="sm"

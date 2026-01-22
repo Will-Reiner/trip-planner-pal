@@ -7,7 +7,6 @@ import {
   Plus, 
   TrendingUp, 
   TrendingDown,
-  Car,
   Users,
   Check,
   X,
@@ -90,22 +89,6 @@ interface Debt {
   valor_devido: number;
 }
 
-interface Ride {
-  id: number;
-  titulo: string;
-  motorista_id: number;
-  motorista_nome: string;
-  origem: string;
-  destino: string;
-  valor_gasolina: number;
-  passageiros: Array<{
-    user_id: number;
-    user_nome: string;
-    contribuicao: number | null;
-    pagamento_confirmado: boolean;
-  }>;
-}
-
 const Custos = () => {
   const { currentUser } = useUser();
   const { data } = useTripData();
@@ -115,12 +98,10 @@ const Custos = () => {
   const [estimates, setEstimates] = useState<Estimate[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [debts, setDebts] = useState<Debt[]>([]);
-  const [rides, setRides] = useState<Ride[]>([]);
   const [loading, setLoading] = useState(true);
   
   const [isEstimateDialogOpen, setIsEstimateDialogOpen] = useState(false);
   const [isExpenseDialogOpen, setIsExpenseDialogOpen] = useState(false);
-  const [isRideDialogOpen, setIsRideDialogOpen] = useState(false);
   
   const [estimateForm, setEstimateForm] = useState({
     category_id: '',
@@ -136,14 +117,6 @@ const Custos = () => {
     pagador_id: currentUser?.id || 0,
     participantes: [] as Array<{ user_id: number; valor_individual: string }>,
   });
-  
-  const [rideForm, setRideForm] = useState({
-    titulo: '',
-    origem: '',
-    destino: '',
-    valor_gasolina: '',
-    passageiros: [] as Array<{ user_id: number; contribuicao: string }>,
-  });
 
   useEffect(() => {
     loadAllData();
@@ -152,19 +125,17 @@ const Custos = () => {
   const loadAllData = async () => {
     try {
       setLoading(true);
-      const [categoriesRes, estimatesRes, expensesRes, debtsRes, ridesRes] = await Promise.all([
+      const [categoriesRes, estimatesRes, expensesRes, debtsRes] = await Promise.all([
         axios.get(`${API_URL}/finances/categories`),
         axios.get(`${API_URL}/finances/estimates`),
         axios.get(`${API_URL}/finances/expenses`),
         axios.get(`${API_URL}/finances/debts-summary`),
-        axios.get(`${API_URL}/rides`),
       ]);
       
       setCategories(categoriesRes.data.data || []);
       setEstimates(estimatesRes.data.data || []);
       setExpenses(expensesRes.data.data || []);
       setDebts(debtsRes.data.data || []);
-      setRides(ridesRes.data.data || []);
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
       toast({
@@ -248,41 +219,6 @@ const Custos = () => {
     }
   };
 
-  const handleCreateRide = async () => {
-    if (!rideForm.titulo) {
-      toast({
-        title: 'Campo obrigatório',
-        description: 'Digite o título da carona',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    try {
-      await axios.post(`${API_URL}/rides`, {
-        ...rideForm,
-        motorista_id: currentUser?.id,
-        valor_gasolina: rideForm.valor_gasolina ? parseFloat(rideForm.valor_gasolina) : null,
-        passageiros: rideForm.passageiros.map(p => ({
-          user_id: p.user_id,
-          contribuicao: p.contribuicao ? parseFloat(p.contribuicao) : null,
-        })),
-      });
-
-      toast({ title: 'Carona criada!' });
-      setIsRideDialogOpen(false);
-      setRideForm({ titulo: '', origem: '', destino: '', valor_gasolina: '', passageiros: [] });
-      loadAllData();
-    } catch (error) {
-      console.error('Erro ao criar carona:', error);
-      toast({
-        title: 'Erro',
-        description: 'Não foi possível criar a carona',
-        variant: 'destructive',
-      });
-    }
-  };
-
   const handleConfirmPayment = async (expenseId: number, userId: number) => {
     try {
       await axios.patch(`${API_URL}/finances/expenses/confirm-payment`, {
@@ -342,23 +278,6 @@ const Custos = () => {
     });
   };
 
-  const toggleRidePassenger = (userId: number) => {
-    setRideForm(prev => {
-      const exists = prev.passageiros.find(p => p.user_id === userId);
-      if (exists) {
-        return {
-          ...prev,
-          passageiros: prev.passageiros.filter(p => p.user_id !== userId),
-        };
-      } else {
-        return {
-          ...prev,
-          passageiros: [...prev.passageiros, { user_id: userId, contribuicao: '' }],
-        };
-      }
-    });
-  };
-
   const totalEstimado = estimates.reduce((acc, e) => acc + parseFloat(e.valor_estimado.toString()), 0);
   const totalGasto = expenses.reduce((acc, e) => acc + parseFloat(e.valor_total.toString()), 0);
   const myDebts = debts.filter(d => d.devedor_id === currentUser?.id);
@@ -405,10 +324,9 @@ const Custos = () => {
 
       <div className="max-w-md mx-auto p-4">
         <Tabs defaultValue="estimativas" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-4">
+          <TabsList className="grid w-full grid-cols-3 mb-4">
             <TabsTrigger value="estimativas">Estimativas</TabsTrigger>
             <TabsTrigger value="despesas">Despesas</TabsTrigger>
-            <TabsTrigger value="caronas">Caronas</TabsTrigger>
             <TabsTrigger value="dividas">Dívidas</TabsTrigger>
           </TabsList>
 
@@ -434,7 +352,7 @@ const Custos = () => {
                         <SelectValue placeholder="Selecione..." />
                       </SelectTrigger>
                       <SelectContent>
-                        {categories.map(cat => (
+                        {categories.filter(cat => cat.nome !== 'Gasolina').map(cat => (
                           <SelectItem key={cat.id} value={cat.id.toString()}>
                             {cat.icone} {cat.nome}
                           </SelectItem>
@@ -460,7 +378,23 @@ const Custos = () => {
                     />
                   </div>
                   <div>
-                    <Label className="mb-2 block">Quem vai dividir?</Label>
+                    <div className="flex items-center justify-between mb-2">
+                      <Label>Quem vai dividir?</Label>
+                      <Button 
+                        type="button"
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => {
+                          const allSelected = estimateForm.participantes.length === data.participants.length;
+                          setEstimateForm({
+                            ...estimateForm,
+                            participantes: allSelected ? [] : data.participants.map(p => p.id)
+                          });
+                        }}
+                      >
+                        {estimateForm.participantes.length === data.participants.length ? 'Desmarcar Todos' : 'Selecionar Todos'}
+                      </Button>
+                    </div>
                     <div className="space-y-2">
                       {data.participants.map(p => (
                         <div key={p.id} className="flex items-center space-x-2">
@@ -531,7 +465,7 @@ const Custos = () => {
                         <SelectValue placeholder="Selecione..." />
                       </SelectTrigger>
                       <SelectContent>
-                        {categories.map(cat => (
+                        {categories.filter(cat => cat.nome !== 'Gasolina').map(cat => (
                           <SelectItem key={cat.id} value={cat.id.toString()}>
                             {cat.icone} {cat.nome}
                           </SelectItem>
@@ -556,7 +490,23 @@ const Custos = () => {
                     />
                   </div>
                   <div>
-                    <Label className="mb-2 block">Quem vai dividir? (deixe vazio para dividir igualmente)</Label>
+                    <div className="flex items-center justify-between mb-2">
+                      <Label>Quem vai dividir? (deixe vazio para dividir igualmente)</Label>
+                      <Button 
+                        type="button"
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => {
+                          const allSelected = expenseForm.participantes.length === data.participants.length;
+                          setExpenseForm({
+                            ...expenseForm,
+                            participantes: allSelected ? [] : data.participants.map(p => ({ user_id: p.id, valor_individual: '' }))
+                          });
+                        }}
+                      >
+                        {expenseForm.participantes.length === data.participants.length ? 'Desmarcar Todos' : 'Selecionar Todos'}
+                      </Button>
+                    </div>
                     <div className="space-y-2">
                       {data.participants.map(p => (
                         <div key={p.id} className="flex items-center gap-2">
@@ -594,7 +544,17 @@ const Custos = () => {
               </DialogContent>
             </Dialog>
 
-            {expenses.map(expense => (
+            {expenses.map(expense => {
+              // Calcular valores reais por pessoa
+              const participantes = expense.participantes || [];
+              const participantesComValorFixo = participantes.filter(p => p.valor_individual !== null);
+              const totalValorFixo = participantesComValorFixo.reduce((sum, p) => sum + (p.valor_individual || 0), 0);
+              const participantesSemValor = participantes.filter(p => p.valor_individual === null);
+              const valorDividido = participantesSemValor.length > 0 
+                ? (expense.valor_total - totalValorFixo) / participantesSemValor.length 
+                : 0;
+
+              return (
               <div key={expense.id} className="bg-card rounded-xl border border-border p-4">
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex items-center gap-2">
@@ -614,12 +574,14 @@ const Custos = () => {
                   </div>
                 </div>
                 <div className="space-y-1">
-                  {expense.participantes?.map(p => (
+                  {participantes.map(p => {
+                    const valorReal = p.valor_individual !== null ? p.valor_individual : valorDividido;
+                    return (
                     <div key={p.user_id} className="flex items-center justify-between text-sm">
                       <span>{p.user_nome}</span>
                       <div className="flex items-center gap-2">
                         <span className="text-muted-foreground">
-                          R$ {p.valor_individual?.toFixed(2) || 'Dividir'}
+                          R$ {valorReal.toFixed(2)}
                         </span>
                         {p.pagamento_confirmado ? (
                           <Badge className="text-xs bg-green-500">Pago ✓</Badge>
@@ -637,129 +599,10 @@ const Custos = () => {
                         )}
                       </div>
                     </div>
-                  ))}
+                  )})}
                 </div>
               </div>
-            ))}
-          </TabsContent>
-
-          {/* CARONAS */}
-          <TabsContent value="caronas" className="space-y-3">
-            <Dialog open={isRideDialogOpen} onOpenChange={setIsRideDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="w-full gap-2">
-                  <Car className="w-4 h-4" />
-                  Nova Carona
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-h-[80vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>Nova Carona</DialogTitle>
-                  <DialogDescription>Organize uma carona e divida a gasolina</DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div>
-                    <Label>Título</Label>
-                    <Input
-                      value={rideForm.titulo}
-                      onChange={(e) => setRideForm({...rideForm, titulo: e.target.value})}
-                      placeholder="Ex: Ida para a praia"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label>Origem</Label>
-                      <Input
-                        value={rideForm.origem}
-                        onChange={(e) => setRideForm({...rideForm, origem: e.target.value})}
-                      />
-                    </div>
-                    <div>
-                      <Label>Destino</Label>
-                      <Input
-                        value={rideForm.destino}
-                        onChange={(e) => setRideForm({...rideForm, destino: e.target.value})}
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <Label>Valor Gasolina (R$)</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={rideForm.valor_gasolina}
-                      onChange={(e) => setRideForm({...rideForm, valor_gasolina: e.target.value})}
-                    />
-                  </div>
-                  <div>
-                    <Label className="mb-2 block">Passageiros</Label>
-                    <div className="space-y-2">
-                      {data.participants.filter(p => p.id !== currentUser?.id).map(p => (
-                        <div key={p.id} className="flex items-center gap-2">
-                          <Checkbox
-                            id={`ride-p-${p.id}`}
-                            checked={rideForm.passageiros.some(pass => pass.user_id === p.id)}
-                            onCheckedChange={() => toggleRidePassenger(p.id)}
-                          />
-                          <Label htmlFor={`ride-p-${p.id}`} className="flex-1">{p.name}</Label>
-                          {rideForm.passageiros.some(pass => pass.user_id === p.id) && (
-                            <Input
-                              type="number"
-                              step="0.01"
-                              placeholder="Valor"
-                              className="w-24 h-8"
-                              value={rideForm.passageiros.find(pass => pass.user_id === p.id)?.contribuicao || ''}
-                              onChange={(e) => {
-                                setRideForm(prev => ({
-                                  ...prev,
-                                  passageiros: prev.passageiros.map(pass =>
-                                    pass.user_id === p.id ? { ...pass, contribuicao: e.target.value } : pass
-                                  ),
-                                }));
-                              }}
-                            />
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button onClick={handleCreateRide}>Criar Carona</Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-
-            {rides.map(ride => (
-              <div key={ride.id} className="bg-card rounded-xl border border-border p-4">
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <Car className="w-5 h-5 text-primary" />
-                    <div>
-                      <h3 className="font-semibold">{ride.titulo}</h3>
-                      <p className="text-xs text-muted-foreground">
-                        Motorista: {ride.motorista_nome}
-                      </p>
-                      {ride.origem && ride.destino && (
-                        <p className="text-xs text-muted-foreground">
-                          {ride.origem} → {ride.destino}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  {ride.valor_gasolina && (
-                    <span className="font-bold text-primary">R$ {parseFloat(ride.valor_gasolina.toString()).toFixed(2)}</span>
-                  )}
-                </div>
-                <div className="flex gap-1 flex-wrap">
-                  {ride.passageiros?.map(p => (
-                    <Badge key={p.user_id} variant={p.pagamento_confirmado ? "default" : "secondary"} className="text-xs">
-                      {p.user_nome} {p.pagamento_confirmado && '✓'}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            ))}
+            )})}
           </TabsContent>
 
           {/* DÍVIDAS */}

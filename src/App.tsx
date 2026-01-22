@@ -5,35 +5,49 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { UserProvider, useUser } from "./contexts/UserContext";
 import { TripDataProvider } from "./contexts/TripDataContext";
-import Onboarding from "./pages/Onboarding";
+import Login from "./pages/Login";
+import AdminUsuarios from "./pages/AdminUsuarios";
 import Gastronomia from "./pages/Gastronomia";
 import Itens from "./pages/Itens";
 import Experience from "./pages/Experience";
 import Perfil from "./pages/Perfil";
 import ListaDeMercado from "./pages/ListaDeMercado";
-import Custos from "./pages/Custos";
+import Custos from "./pages/CustosNew";
+import Caronas from "./pages/Caronas";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { currentUser } = useUser();
+  const token = localStorage.getItem('trip_planner_token');
   
-  if (!currentUser) {
-    return <Navigate to="/" replace />;
+  if (!token) {
+    return <Navigate to="/login" replace />;
   }
   
   return <>{children}</>;
 };
 
 const AppRoutes = () => {
-  const { currentUser } = useUser();
+  const token = localStorage.getItem('trip_planner_token');
   
   return (
     <Routes>
       <Route 
+        path="/login" 
+        element={token ? <Navigate to="/gastronomia" replace /> : <Login />} 
+      />
+      <Route 
         path="/" 
-        element={currentUser ? <Navigate to="/gastronomia" replace /> : <Onboarding />} 
+        element={<Navigate to={token ? "/gastronomia" : "/login"} replace />} 
+      />
+      <Route 
+        path="/admin-usuarios" 
+        element={
+          <ProtectedRoute>
+            <AdminUsuarios />
+          </ProtectedRoute>
+        } 
       />
       <Route 
         path="/gastronomia" 
@@ -64,6 +78,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <Custos />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/caronas" 
+        element={
+          <ProtectedRoute>
+            <Caronas />
           </ProtectedRoute>
         } 
       />

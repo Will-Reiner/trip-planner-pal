@@ -71,10 +71,15 @@ const MealCard: React.FC<MealCardProps> = ({ meal }) => {
   const { currentUser } = useUser();
   const { toast } = useToast();
 
+  // Carregar ingredientes quando o componente monta ou quando meal.id muda
+  useEffect(() => {
+    loadMealIngredients();
+  }, [meal.id, data.meals.length]); // Recarrega também quando a lista de meals muda
+
+  // Carregar market items apenas quando abre o dialog de gerenciar
   useEffect(() => {
     if (isIngredientsDialogOpen) {
       loadMarketItems();
-      loadMealIngredients();
     }
   }, [isIngredientsDialogOpen]);
 
@@ -85,10 +90,19 @@ const MealCard: React.FC<MealCardProps> = ({ meal }) => {
 
   const getMealEmoji = (type: string) => {
     switch (type) {
-      case 'Café da Manhã': return '☕';
-      case 'Almoço': return '🍽️';
-      case 'Jantar': return '🌙';
+      case 'breakfast': return '☕';
+      case 'lunch': return '🍽️';
+      case 'dinner': return '🌙';
       default: return '🍴';
+    }
+  };
+
+  const getMealLabel = (type: string) => {
+    switch (type) {
+      case 'breakfast': return 'Café da Manhã';
+      case 'lunch': return 'Almoço';
+      case 'dinner': return 'Jantar';
+      default: return type;
     }
   };
 
@@ -200,7 +214,7 @@ const MealCard: React.FC<MealCardProps> = ({ meal }) => {
           <div className="flex items-center gap-3 flex-1">
             <span className="text-2xl">{getMealEmoji(meal.type)}</span>
             <div className="text-left flex-1">
-              <h3 className="font-semibold text-foreground">{meal.type}</h3>
+              <h3 className="font-semibold text-foreground">{getMealLabel(meal.type)}</h3>
               {isEditingName ? (
                 <div className="flex items-center gap-2 mt-1" onClick={(e) => e.stopPropagation()}>
                   <Input

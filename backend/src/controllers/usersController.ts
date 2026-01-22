@@ -4,7 +4,7 @@ import pool from '../config/database';
 export const getAllUsers = async (req: Request, res: Response) => {
   try {
     const result = await pool.query(
-      'SELECT id, nome, avatar_url, titulo_engracado, created_at FROM users ORDER BY nome'
+      'SELECT id, nome, avatar_url, titulo_engracado, role, created_at FROM users ORDER BY nome'
     );
     res.json({ success: true, data: result.rows });
   } catch (error) {
@@ -55,16 +55,17 @@ export const createUser = async (req: Request, res: Response) => {
 export const updateUser = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { nome, avatar_url, titulo_engracado } = req.body;
+    const { nome, avatar_url, titulo_engracado, role } = req.body;
     
     const result = await pool.query(
       `UPDATE users 
        SET nome = COALESCE($1, nome),
            avatar_url = COALESCE($2, avatar_url),
-           titulo_engracado = COALESCE($3, titulo_engracado)
-       WHERE id = $4
+           titulo_engracado = COALESCE($3, titulo_engracado),
+           role = COALESCE($4, role)
+       WHERE id = $5
        RETURNING *`,
-      [nome, avatar_url, titulo_engracado, id]
+      [nome, avatar_url, titulo_engracado, role, id]
     );
     
     if (result.rows.length === 0) {
@@ -75,5 +76,25 @@ export const updateUser = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Erro ao atualizar usuário:', error);
     res.status(500).json({ success: false, error: 'Erro ao atualizar usuário' });
+  }
+};
+
+export const deleteUser = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    
+    const result = await pool.query(
+      'DELETE FROM users WHERE id = $1 RETURNING id',
+      [id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Usuário não encontrado' });
+    }
+    
+    res.json({ success: true, message: 'Usuário excluído com sucesso' });
+  } catch (error) {
+    console.error('Erro ao excluir usuário:', error);
+    res.status(500).json({ success: false, error: 'Erro ao excluir usuário' });
   }
 };

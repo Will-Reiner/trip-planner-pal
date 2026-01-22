@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import pool from './config/database';
 
 // Importar rotas
+import authRoutes from './routes/auth';
 import usersRoutes from './routes/users';
 import mealsRoutes from './routes/meals';
 import drinksRoutes from './routes/drinks';
@@ -46,6 +47,7 @@ app.get('/health', async (req: Request, res: Response) => {
 });
 
 // Rotas da API
+app.use('/api/auth', authRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/meals', mealsRoutes);
 app.use('/api/drinks', drinksRoutes);

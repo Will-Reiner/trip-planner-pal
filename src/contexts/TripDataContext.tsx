@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { useUser } from './UserContext';
 import * as api from '../services/api';
 
 interface Participant {
@@ -43,6 +44,8 @@ interface Essential {
   id: number;
   name: string;
   checked: boolean;
+  is_checked_by_user?: boolean;
+  created_by_id?: number | null;
 }
 
 interface PartyTheme {
@@ -80,11 +83,12 @@ interface TripDataContextType {
   assignDishWasher: (mealId: number, slot: number, userId: number) => void;
   voteDrink: (type: 'alcoholic' | 'nonAlcoholic', drinkId: number, userId: number) => void;
   addCommunityItem: (name: string) => void;
-  assignCommunityItem: (itemId: number, userId: number) => void;
+  assignCommunityItem: (itemId: number, userId: number | null) => void;
   addTask: (name: string) => void;
-  assignTask: (taskId: number, userId: number) => void;
+  assignTask: (taskId: number, userId: number | null) => void;
   addEssential: (name: string) => void;
   toggleEssential: (essentialId: number) => void;
+  deleteEssential: (essentialId: number) => void;
   votePartyTheme: (themeId: number, userId: number) => void;
   addQuote: (text: string, authorId: number) => void;
   reloadData: () => Promise<void>;
@@ -93,6 +97,7 @@ interface TripDataContextType {
 const TripDataContext = createContext<TripDataContextType | undefined>(undefined);
 
 export const TripDataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const { currentUser } = useUser();
   const [data, setData] = useState<TripData>({
     participants: [],
     meals: [],
@@ -115,16 +120,20 @@ export const TripDataProvider: React.FC<{ children: ReactNode }> = ({ children }
     try {
       setLoading(true);
       console.log('📡 Carregando dados da API...');
+      console.log('Current user ID:', currentUser?.id);
+      
+      const userId = currentUser?.id;
       
       const [users, meals, drinks, checklist, experiences] = await Promise.all([
         api.getUsers(),
         api.getMeals(),
         api.getDrinks(),
-        api.getChecklist(),
+        userId ? api.getChecklist(userId) : api.getChecklist(),
         api.getExperiences()
       ]);
 
       console.log('✅ Dados carregados:', { users: users.length, meals: meals.length, drinks: drinks.length });
+      console.log('Checklist loaded with user_id=', userId, ':', checklist);
 
       // Mapear usuários
       const participants = users.map(u => ({
@@ -135,16 +144,24 @@ export const TripDataProvider: React.FC<{ children: ReactNode }> = ({ children }
       }));
 
       // Mapear refeições
-      const mappedMeals = meals.map(m => ({
-        id: m.id,
-        day: new Date(m.data).getDate(),
-        type: m.tipo_refeicao === 'cafe' ? 'Café da Manhã' : m.tipo_refeicao === 'almoco' ? 'Almoço' : 'Jantar',
-        description: m.nome_refeicao || '',
-        ingredients: m.ingredientes || [],
-        chef: m.cook_id,
-        helper: m.helper_id,
-        dishWashers: [m.dishwasher1_id, m.dishwasher2_id]
-      }));
+      const mappedMeals = meals.map(m => {
+        const mealDate = new Date(m.data);
+        const day = mealDate.getDate();
+        const type = m.tipo_refeicao === 'cafe' ? 'breakfast' : m.tipo_refeicao === 'almoco' ? 'lunch' : 'dinner';
+        
+        console.log(`📅 Meal mapping: ${m.nome_refeicao} - data: ${m.data}, day: ${day}, type: ${type}`);
+        
+        return {
+          id: m.id,
+          day,
+          type,
+          description: m.nome_refeicao || '',
+          ingredients: m.ingredientes || [],
+          chef: m.cook_id,
+          helper: m.helper_id,
+          dishWashers: [m.dishwasher1_id, m.dishwasher2_id]
+        };
+      });
 
       // Mapear bebidas
       const alcoholic = drinks
@@ -187,7 +204,8 @@ export const TripDataProvider: React.FC<{ children: ReactNode }> = ({ children }
         .map(c => ({
           id: c.id,
           name: c.descricao,
-          checked: c.completed
+          checked: c.is_checked_by_user || false, // Usa status individual do usuário
+          created_by_id: c.created_by_id
         }));
 
       // Mapear experiências
@@ -352,7 +370,7 @@ export const TripDataProvider: React.FC<{ children: ReactNode }> = ({ children }
     }
   };
 
-  const assignCommunityItem = async (itemId: number, userId: number) => {
+  const assignCommunityItem = async (itemId: number, userId: number | null) => {
     try {
       await api.claimChecklistItem(itemId, userId);
       setData(prev => ({
@@ -361,9 +379,9 @@ export const TripDataProvider: React.FC<{ children: ReactNode }> = ({ children }
           item.id === itemId ? { ...item, assignee: userId } : item
         )
       }));
-      toast({ title: 'Item reivindicado!' });
+      toast({ title: userId ? 'Item reivindicado!' : 'Responsabilidade removida' });
     } catch (error) {
-      toast({ title: 'Erro ao reivindicar item', variant: 'destructive' });
+      toast({ title: 'Erro ao atualizar item', variant: 'destructive' });
     }
   };
 
@@ -383,7 +401,7 @@ export const TripDataProvider: React.FC<{ children: ReactNode }> = ({ children }
     }
   };
 
-  const assignTask = async (taskId: number, userId: number) => {
+  const assignTask = async (taskId: number, userId: number | null) => {
     try {
       await api.claimChecklistItem(taskId, userId);
       setData(prev => ({
@@ -392,9 +410,9 @@ export const TripDataProvider: React.FC<{ children: ReactNode }> = ({ children }
           task.id === taskId ? { ...task, assignee: userId } : task
         )
       }));
-      toast({ title: 'Tarefa reivindicada!' });
+      toast({ title: userId ? 'Tarefa reivindicada!' : 'Responsabilidade removida' });
     } catch (error) {
-      toast({ title: 'Erro ao reivindicar tarefa', variant: 'destructive' });
+      toast({ title: 'Erro ao atualizar tarefa', variant: 'destructive' });
     }
   };
 
@@ -415,19 +433,39 @@ export const TripDataProvider: React.FC<{ children: ReactNode }> = ({ children }
   };
 
   const toggleEssential = async (essentialId: number) => {
+    if (!currentUser) return;
+    
     try {
-      const essential = data.essentials.find(e => e.id === essentialId);
-      if (!essential) return;
+      const result = await api.toggleUserChecklistItem(essentialId, currentUser.id);
       
-      await api.updateChecklistItem(essentialId, { completed: !essential.checked });
+      // Atualizar apenas o estado local para o usuário atual
       setData(prev => ({
         ...prev,
         essentials: prev.essentials.map(e =>
-          e.id === essentialId ? { ...e, checked: !e.checked } : e
+          e.id === essentialId ? { ...e, checked: result.checked } : e
         )
       }));
+      
     } catch (error) {
       toast({ title: 'Erro ao atualizar item', variant: 'destructive' });
+    }
+  };
+
+  const deleteEssential = async (essentialId: number) => {
+    if (!currentUser) return;
+    
+    try {
+      await api.deleteChecklistItem(essentialId);
+      
+      // Remover do estado local sem recarregar tudo
+      setData(prev => ({
+        ...prev,
+        essentials: prev.essentials.filter(e => e.id !== essentialId)
+      }));
+      
+      toast({ title: 'Item removido com sucesso!' });
+    } catch (error) {
+      toast({ title: 'Erro ao remover item', variant: 'destructive' });
     }
   };
 
@@ -489,6 +527,7 @@ export const TripDataProvider: React.FC<{ children: ReactNode }> = ({ children }
       assignTask,
       addEssential,
       toggleEssential,
+      deleteEssential,
       votePartyTheme,
       addQuote,
       reloadData: loadAllData
