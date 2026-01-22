@@ -6,16 +6,18 @@ Backend Node.js com PostgreSQL para aplicação de planejamento de viagem colabo
 
 - Node.js + TypeScript
 - Express.js
-- PostgreSQL
+- PostgreSQL 15
 - pg (node-postgres)
+- JWT Authentication
+- bcrypt
 
 ## 📋 Pré-requisitos
 
 - Node.js 18+
-- PostgreSQL 14+
-- npm ou yarn
+- Docker & Docker Compose
+- PowerShell (Windows)
 
-## ⚙️ Instalação
+## ⚙️ Setup Rápido
 
 1. **Instale as dependências:**
 ```bash
@@ -23,26 +25,34 @@ cd backend
 npm install
 ```
 
-2. **Configure o banco de dados:**
-
-Crie um arquivo `.env` baseado no `.env.example`:
-```bash
-cp .env.example .env
+2. **Inicie o PostgreSQL:**
+```powershell
+docker-compose up -d
 ```
 
-Edite o `.env` com suas credenciais do PostgreSQL:
+3. **Configure o banco e crie admin:**
+```powershell
+.\setup-db.ps1
 ```
+
+Este script executa:
+- Cria todas as tabelas (init-database.sql)
+- Cria usuário admin padrão (will@tripplanner.com)
+
+4. **Configure variáveis de ambiente:**
+
+Crie arquivo `.env`:
+```env
 PORT=3001
-DATABASE_URL=postgresql://seu_usuario:sua_senha@localhost:5432/trip_planner
-NODE_ENV=development
+DB_HOST=localhost
+DB_PORT=5433
+DB_USER=trip_planner_user
+DB_PASSWORD=trip_planner_pass
+DB_NAME=trip_planner
+JWT_SECRET=seu_jwt_secret_super_seguro
 ```
 
-3. **Crie o banco de dados e tabelas:**
-```bash
-psql -U postgres -f schema.sql
-```
-
-4. **Inicie o servidor:**
+5. **Inicie o servidor:**
 ```bash
 # Desenvolvimento (com hot reload)
 npm run dev

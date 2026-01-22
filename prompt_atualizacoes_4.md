@@ -1,4 +1,0 @@
-- entendi oq vc fez, vc apenas colocou o botao de adicionar uma refeicao em desenvolvimento, quero que vc desenvolva isso: analise o banco de dados de refeicoes, e as suas rotas, preciso que ao clicar em adicionar uma refeicao eu possa escolher o nome, conectar com ingredientes da minha lista de mercado, escolher um chef, um ajudante, quem lava a louca.
-- nao consigo entrar na pagina de lista de mercado, ta tudo em branco
-- nao funcionou a logica de riscar individual, e alem disso, após des-riscar, ele reinicia a pagina bem estranho, nao tem opcao para retirar um item, enfim ta tudo errado, analise e corrija
-- vamos mudar o sistema de login para conter uma role (admin, membro) e tambem senha para cada usuario, onde o admin cria os membros da viagem e cria uma senha para cada membro. (esta é uma funcionalidade bem complexa, pode me fazer muuuuitas perguntas quando a isso, vamos debater bastante antes de ir pra frente)

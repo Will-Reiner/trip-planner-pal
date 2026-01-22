@@ -1,5 +1,0 @@
-- ao tentar clicar no X para tirar responsabilidade em "quem leva" e "tarefas", ele da o erro: {"success":false,"error":"user_id é obrigatório"}
-- ao clicar no X para remover a respobilidade de comprar um item ele mostra uma mensagem de sucesso "Responsabilidade removida" mas continua aparecendo o nome do usuario no item (nao sei se é apenas um erro no frontend ou realmente nao esta sendo retirado a responsabilidade do usuario, de qualquer forma arrume)
-- para os campos de um item do mercado, ainda preciso do preço dele! faca com que o preco final seja preco*quantidade
-- gostei que melhorou a interface para mostrar cafe da manha, almoco etc, mas ainda nao é possivel clicar para adicionar, arrume
-- vamos fazer o desenvolvimento do riscar individual, pode me fazer as perguntas necessarias para isso agora

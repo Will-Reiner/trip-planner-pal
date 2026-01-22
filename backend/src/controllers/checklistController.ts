@@ -35,6 +35,7 @@ export const getAllChecklist = async (req: Request, res: Response) => {
 export const getChecklistByCategory = async (req: Request, res: Response) => {
   try {
     const { category } = req.params;
+    const { user_id } = req.query;
     
     if (!['item', 'tarefa', 'nao_esqueca'].includes(category)) {
       return res.status(400).json({ 
@@ -47,12 +48,20 @@ export const getChecklistByCategory = async (req: Request, res: Response) => {
       SELECT 
         c.*,
         u.nome as owner_nome,
-        u.avatar_url as owner_avatar
+        u.avatar_url as owner_avatar,
+        CASE 
+          WHEN c.categoria = 'nao_esqueca' AND $2::INTEGER IS NOT NULL 
+          THEN EXISTS(
+            SELECT 1 FROM user_checklist_checked 
+            WHERE checklist_id = c.id AND user_id = $2 AND checked = TRUE
+          )
+          ELSE c.completed 
+        END as is_checked_by_user
       FROM checklist c
       LEFT JOIN users u ON c.owner_id = u.id
       WHERE c.categoria = $1
       ORDER BY c.completed, c.created_at
-    `, [category]);
+    `, [category, user_id || null]);
     
     res.json({ success: true, data: result.rows });
   } catch (error) {

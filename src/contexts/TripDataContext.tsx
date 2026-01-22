@@ -204,8 +204,7 @@ export const TripDataProvider: React.FC<{ children: ReactNode }> = ({ children }
         .map(c => ({
           id: c.id,
           name: c.descricao,
-          checked: c.completed,
-          is_checked_by_user: c.is_checked_by_user || false,
+          checked: c.is_checked_by_user || false, // Usa status individual do usuário
           created_by_id: c.created_by_id
         }));
 
@@ -439,11 +438,11 @@ export const TripDataProvider: React.FC<{ children: ReactNode }> = ({ children }
     try {
       const result = await api.toggleUserChecklistItem(essentialId, currentUser.id);
       
-      // Atualizar apenas o estado local, sem recarregar tudo
+      // Atualizar apenas o estado local para o usuário atual
       setData(prev => ({
         ...prev,
         essentials: prev.essentials.map(e =>
-          e.id === essentialId ? { ...e, is_checked_by_user: result.checked } : e
+          e.id === essentialId ? { ...e, checked: result.checked } : e
         )
       }));
       

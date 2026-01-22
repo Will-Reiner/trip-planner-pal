@@ -99,25 +99,29 @@ const ListaDeMercado = () => {
   const loadItems = async () => {
     try {
       setLoading(true);
-      console.log('Loading market items...');
       const response = await axios.get(`${API_URL}/market-items`);
-      console.log('Market items response:', response.data);
       const itemsData = response.data.data || [];
+      
+      // Normalizar valores numéricos (PostgreSQL pode retornar strings para DECIMAL)
+      const normalizedItems = itemsData.map((item: any) => ({
+        ...item,
+        quantidade: Number(item.quantidade) || 0,
+        valor_por_porcao: item.valor_por_porcao ? Number(item.valor_por_porcao) : undefined,
+        tamanho_porcao: item.tamanho_porcao ? Number(item.tamanho_porcao) : undefined,
+      }));
       
       // Carregar as refeições para cada item
       const itemsWithMeals = await Promise.all(
-        itemsData.map(async (item: MarketItem) => {
+        normalizedItems.map(async (item: MarketItem) => {
           try {
             const mealsResponse = await axios.get(`${API_URL}/meal-ingredients/ingredient/${item.id}`);
             return { ...item, meals: mealsResponse.data.data || [] };
           } catch (error) {
-            console.error(`Erro ao carregar meals para item ${item.id}:`, error);
             return { ...item, meals: [] };
           }
         })
       );
       
-      console.log('Items with meals:', itemsWithMeals);
       setItems(itemsWithMeals);
     } catch (error) {
       console.error('Erro ao carregar itens:', error);
@@ -435,7 +439,7 @@ const ListaDeMercado = () => {
                           {item.quantidade} {item.unidade}
                           {item.valor_por_porcao && (
                             <span className="ml-2 font-medium text-primary">
-                              • R$ {item.valor_por_porcao.toFixed(2)}
+                              • R$ {Number(item.valor_por_porcao).toFixed(2)}
                             </span>
                           )}
                         </p>

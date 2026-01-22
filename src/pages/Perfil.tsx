@@ -2,7 +2,7 @@ import { useUser } from '../contexts/UserContext';
 import { useTripData } from '../contexts/TripDataContext';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
-import { User, LogOut, Camera, Heart, Crown } from 'lucide-react';
+import { User, LogOut, Camera, Heart, Crown, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -11,7 +11,7 @@ import api from '@/services/api';
 
 const Perfil = () => {
   const { currentUser, setCurrentUser } = useUser();
-  const { reloadData } = useTripData();
+  const { reloadData, data } = useTripData();
   const navigate = useNavigate();
   const [uploading, setUploading] = useState(false);
 
@@ -159,7 +159,7 @@ const Perfil = () => {
           </div>
           <div className="bg-card rounded-2xl border border-border p-4 text-center">
             <div className="text-3xl mb-2">👥</div>
-            <p className="text-2xl font-bold text-foreground">15</p>
+            <p className="text-2xl font-bold text-foreground">{data.participants.length}</p>
             <p className="text-sm text-muted-foreground">Participantes</p>
           </div>
         </div>
@@ -171,6 +171,17 @@ const Perfil = () => {
             Bora fazer essa trip inesquecível! 🚀
           </p>
         </div>
+
+        {/* Admin Panel Button */}
+        {isAdmin && (
+          <Button
+            onClick={() => navigate('/admin-usuarios')}
+            className="w-full h-14 text-lg font-semibold rounded-2xl mb-4 bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600"
+          >
+            <Shield className="w-5 h-5 mr-2" />
+            Gerenciar Usuários
+          </Button>
+        )}
 
         {/* Logout Button */}
         <Button

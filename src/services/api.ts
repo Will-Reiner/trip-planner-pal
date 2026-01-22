@@ -12,9 +12,15 @@ const api = axios.create({
   timeout: 10000,
 });
 
-// Interceptor para debug
+// Interceptor para adicionar token JWT e debug
 api.interceptors.request.use(
   (config) => {
+    // Adicionar token JWT se existir
+    const token = localStorage.getItem('trip_planner_token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    
     console.log(`➡️ Fazendo requisição: ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`);
     return config;
   },

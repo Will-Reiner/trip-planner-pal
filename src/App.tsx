@@ -6,7 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { UserProvider, useUser } from "./contexts/UserContext";
 import { TripDataProvider } from "./contexts/TripDataContext";
 import Login from "./pages/Login";
-import Onboarding from "./pages/Onboarding";
+import AdminUsuarios from "./pages/AdminUsuarios";
 import Gastronomia from "./pages/Gastronomia";
 import Itens from "./pages/Itens";
 import Experience from "./pages/Experience";
@@ -35,17 +35,17 @@ const AppRoutes = () => {
     <Routes>
       <Route 
         path="/login" 
-        element={token ? <Navigate to="/onboarding" replace /> : <Login />} 
+        element={token ? <Navigate to="/gastronomia" replace /> : <Login />} 
       />
       <Route 
         path="/" 
         element={<Navigate to={token ? "/gastronomia" : "/login"} replace />} 
       />
       <Route 
-        path="/onboarding" 
+        path="/admin-usuarios" 
         element={
           <ProtectedRoute>
-            <Onboarding />
+            <AdminUsuarios />
           </ProtectedRoute>
         } 
       />

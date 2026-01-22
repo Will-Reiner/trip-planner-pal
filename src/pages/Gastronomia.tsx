@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTripData } from '../contexts/TripDataContext';
 import { useUser } from '../contexts/UserContext';
 import { useNavigate } from 'react-router-dom';
@@ -41,7 +41,10 @@ const Gastronomia = () => {
   const { currentUser } = useUser();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [selectedDay, setSelectedDay] = useState(14);
+  const [selectedDay, setSelectedDay] = useState(() => {
+    const saved = localStorage.getItem('gastronomia_selected_day');
+    return saved ? parseInt(saved) : 14;
+  });
   const [isAddMealOpen, setIsAddMealOpen] = useState(false);
   const [selectedMealType, setSelectedMealType] = useState<string>('');
   const [mealName, setMealName] = useState('');
@@ -52,6 +55,11 @@ const Gastronomia = () => {
   const [marketItems, setMarketItems] = useState<MarketItem[]>([]);
   const [selectedIngredients, setSelectedIngredients] = useState<number[]>([]);
   const [loadingItems, setLoadingItems] = useState(false);
+
+  // Salvar dia selecionado no localStorage sempre que mudar
+  useEffect(() => {
+    localStorage.setItem('gastronomia_selected_day', selectedDay.toString());
+  }, [selectedDay]);
 
   const days = [14, 15, 16, 17];
   const mealsForDay = data.meals.filter(m => m.day === selectedDay);
@@ -140,23 +148,19 @@ const Gastronomia = () => {
         dishwasher2_id: dishwasher2Id && dishwasher2Id !== 'none' ? parseInt(dishwasher2Id) : null,
       };
 
-      console.log('Creating meal with data:', mealData);
-
       const mealResponse = await axios.post(`${API_URL}/meals`, mealData);
       const newMealId = mealResponse.data.data.id;
-
-      console.log('Meal created with ID:', newMealId);
 
       // Adicionar ingredientes
       if (selectedIngredients.length > 0) {
         await Promise.all(
-          selectedIngredients.map(ingredientId =>
-            axios.post(`${API_URL}/meal-ingredients`, {
+          selectedIngredients.map(async ingredientId => {
+            return await axios.post(`${API_URL}/meal-ingredients`, {
               meal_id: newMealId,
               ingredient_id: ingredientId,
-              quantidade_necessaria: 1, // Valor padrão
-            })
-          )
+              quantidade_necessaria: 1,
+            });
+          })
         );
       }
 
@@ -174,7 +178,7 @@ const Gastronomia = () => {
       setSelectedIngredients([]);
       setIsAddMealOpen(false);
 
-      // Recarregar dados
+      // Recarregar dados (o dia selecionado será mantido pelo localStorage)
       await reloadData();
 
     } catch (error: any) {

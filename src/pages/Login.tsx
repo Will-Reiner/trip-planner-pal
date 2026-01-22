@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useUser } from '@/contexts/UserContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,6 +14,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 const Login = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { setCurrentUser } = useUser();
   const [nome, setNome] = useState('');
   const [senha, setSenha] = useState('');
   const [loading, setLoading] = useState(false);
@@ -42,13 +44,20 @@ const Login = () => {
       localStorage.setItem('trip_planner_token', token);
       localStorage.setItem('trip_planner_user', JSON.stringify(user));
 
+      // Popular UserContext (mapear nome -> name para compatibilidade)
+      setCurrentUser({
+        id: user.id,
+        name: user.nome,
+        photo: user.avatar_url
+      });
+
       toast({
         title: `Bem-vindo, ${user.nome}!`,
         description: user.role === 'admin' ? '👑 Você é um administrador' : 'Pronto para a trip!',
       });
 
-      // Redirecionar para onboarding ou página principal
-      navigate('/onboarding');
+      // Redirecionar para página principal
+      navigate('/gastronomia');
 
     } catch (error: any) {
       console.error('Erro no login:', error);

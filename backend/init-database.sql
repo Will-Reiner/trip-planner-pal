@@ -1,10 +1,19 @@
--- Criação do banco de dados e schema
--- Execute: psql -U postgres -f schema.sql
+-- ========================================
+-- SCRIPT DE INICIALIZAÇÃO COMPLETA DO BANCO
+-- Trip Planner Pal - Database Setup
+-- ========================================
+-- Execute: psql -U postgres -f init-database.sql
+-- Ou através do Docker: docker exec -i trip-planner-db psql -U postgres < init-database.sql
 
+-- Dropar e recriar o banco de dados
 DROP DATABASE IF EXISTS trip_planner;
 CREATE DATABASE trip_planner;
 
 \c trip_planner;
+
+-- ========================================
+-- 1. SCHEMA BASE (Tabelas principais)
+-- ========================================
 
 -- Tabela de Usuários
 CREATE TABLE users (
@@ -13,6 +22,7 @@ CREATE TABLE users (
     avatar_url TEXT,
     titulo_engracado VARCHAR(255),
     senha VARCHAR(255),
+    role VARCHAR(20) DEFAULT 'membro' CHECK (role IN ('admin', 'membro')),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -33,10 +43,6 @@ CREATE TABLE meals (
     UNIQUE(data, tipo_refeicao)
 );
 
--- Índices para melhor performance
-CREATE INDEX idx_meals_data ON meals(data);
-CREATE INDEX idx_meals_cook ON meals(cook_id);
-
 -- Tabela de Votação de Bebidas
 CREATE TABLE drinks_poll (
     id SERIAL PRIMARY KEY,
@@ -48,9 +54,6 @@ CREATE TABLE drinks_poll (
     UNIQUE(categoria, nome_bebida)
 );
 
--- Índice para busca por categoria
-CREATE INDEX idx_drinks_categoria ON drinks_poll(categoria);
-
 -- Tabela de Checklist
 CREATE TABLE checklist (
     id SERIAL PRIMARY KEY,
@@ -58,13 +61,20 @@ CREATE TABLE checklist (
     descricao TEXT NOT NULL,
     owner_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
     completed BOOLEAN DEFAULT FALSE,
+    created_by_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Índice para busca por categoria e status
-CREATE INDEX idx_checklist_categoria ON checklist(categoria);
-CREATE INDEX idx_checklist_owner ON checklist(owner_id);
+-- Tabela de Sistema de Riscar Individual (Essenciais)
+CREATE TABLE user_checklist_checked (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    checklist_id INTEGER NOT NULL REFERENCES checklist(id) ON DELETE CASCADE,
+    checked BOOLEAN DEFAULT TRUE,
+    checked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, checklist_id)
+);
 
 -- Tabela de Experiências
 CREATE TABLE experience (
@@ -76,10 +86,6 @@ CREATE TABLE experience (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
--- Índice para busca por tipo
-CREATE INDEX idx_experience_tipo ON experience(tipo);
-CREATE INDEX idx_experience_autor ON experience(autor_id);
 
 -- Tabela de Lista de Mercado
 CREATE TABLE market_items (
@@ -98,11 +104,6 @@ CREATE TABLE market_items (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Índices para market_items
-CREATE INDEX idx_market_items_categoria ON market_items(categoria);
-CREATE INDEX idx_market_items_responsavel ON market_items(responsavel_id);
-CREATE INDEX idx_market_items_comprado ON market_items(comprado);
-
 -- Tabela de relação entre refeições e ingredientes do mercado
 CREATE TABLE meal_ingredients (
     id SERIAL PRIMARY KEY,
@@ -112,9 +113,6 @@ CREATE TABLE meal_ingredients (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(meal_id, ingredient_id)
 );
-
-CREATE INDEX idx_meal_ingredients_meal ON meal_ingredients(meal_id);
-CREATE INDEX idx_meal_ingredients_ingredient ON meal_ingredients(ingredient_id);
 
 -- Tabela de Categorias de Despesas
 CREATE TABLE expense_categories (
@@ -198,7 +196,40 @@ CREATE TABLE ride_passengers (
     UNIQUE(ride_id, user_id)
 );
 
--- Índices para expense system
+-- ========================================
+-- 2. ÍNDICES PARA PERFORMANCE
+-- ========================================
+
+-- Users
+CREATE INDEX idx_users_role ON users(role);
+
+-- Meals
+CREATE INDEX idx_meals_data ON meals(data);
+CREATE INDEX idx_meals_cook ON meals(cook_id);
+
+-- Drinks
+CREATE INDEX idx_drinks_categoria ON drinks_poll(categoria);
+
+-- Checklist
+CREATE INDEX idx_checklist_categoria ON checklist(categoria);
+CREATE INDEX idx_checklist_owner ON checklist(owner_id);
+CREATE INDEX idx_user_checklist_checked_user ON user_checklist_checked(user_id);
+CREATE INDEX idx_user_checklist_checked_checklist ON user_checklist_checked(checklist_id);
+
+-- Experience
+CREATE INDEX idx_experience_tipo ON experience(tipo);
+CREATE INDEX idx_experience_autor ON experience(autor_id);
+
+-- Market Items
+CREATE INDEX idx_market_items_categoria ON market_items(categoria);
+CREATE INDEX idx_market_items_responsavel ON market_items(responsavel_id);
+CREATE INDEX idx_market_items_comprado ON market_items(comprado);
+
+-- Meal Ingredients
+CREATE INDEX idx_meal_ingredients_meal ON meal_ingredients(meal_id);
+CREATE INDEX idx_meal_ingredients_ingredient ON meal_ingredients(ingredient_id);
+
+-- Expenses
 CREATE INDEX idx_expense_estimates_category ON expense_estimates(category_id);
 CREATE INDEX idx_expense_estimate_participants_estimate ON expense_estimate_participants(estimate_id);
 CREATE INDEX idx_expense_estimate_participants_user ON expense_estimate_participants(user_id);
@@ -210,12 +241,16 @@ CREATE INDEX idx_expense_participants_expense ON expense_participants(expense_id
 CREATE INDEX idx_expense_participants_user ON expense_participants(user_id);
 CREATE INDEX idx_expense_participants_pagamento ON expense_participants(pagamento_confirmado);
 
--- Índices para ride system
+-- Rides
 CREATE INDEX idx_rides_motorista ON rides(motorista_id);
 CREATE INDEX idx_rides_data ON rides(data_viagem);
 CREATE INDEX idx_rides_expense ON rides(expense_id);
 CREATE INDEX idx_ride_passengers_ride ON ride_passengers(ride_id);
 CREATE INDEX idx_ride_passengers_user ON ride_passengers(user_id);
+
+-- ========================================
+-- 3. TRIGGERS E FUNÇÕES
+-- ========================================
 
 -- Função para atualizar updated_at automaticamente
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -255,47 +290,8 @@ CREATE TRIGGER update_rides_updated_at BEFORE UPDATE ON rides
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- ========================================
--- DADOS INICIAIS PARA PRODUÇÃO
+-- 4. VIEWS
 -- ========================================
-
--- 1. USUÁRIOS DA GALERA
-INSERT INTO users (nome, titulo_engracado) VALUES
-('Will', 'Sommelier de Aluguel'),
-('Lumi', 'Fiscal de Louça'),
-('Dlima', 'Mestre do Braseiro'),
-('Volpi', 'DJ Oficial do Rolê'),
-('Cams', 'Rainha do Open Bar'),
-('Rafa', 'Inimigo do Fim'),
-('Kau', 'Vegetariana da Galera'),
-('Jamal', 'Segurança do Cooler'),
-('Juliana', 'Crítica Gastronômica'),
-('Paula', 'Expert em Caipirinha'),
-('Flores', 'Vibe Positiva'),
-('Yuri', 'O Cara dos Shots'),
-('Ana', 'Gerente de Entretenimento'),
-('Bia', 'Dorminhoca do Grupo'),
-('Luana', 'Primeira a Chegar'),
-('Tamara', 'La policiaaaaa'),
-('Amigo da Bia', 'Um amigo'),
-('Amigo da Lumi', 'Dois amigo');
-
--- 2. CADASTRO DE BEBIDAS (DRINKS POLL)
-INSERT INTO drinks_poll (categoria, nome_bebida) VALUES
-('alc', 'Cerveja'),
-('alc', 'Vinho'),
-('alc', 'Caipirinha'),
-('alc', 'Shots'),
-('non-alc', 'Suco'),
-('non-alc', 'Refri Zero'),
-('non-alc', 'Refri Normal'),
-('non-alc', 'Agua com Gas');
-
-INSERT INTO expense_categories (nome, icone, cor, is_system) VALUES
-    ('Aluguel', NULL, '#3b82f6', true),
-    ('Mercado', NULL, '#10b981', true),
-    ('Passeios', NULL, '#f59e0b', true),
-    ('Gasolina', NULL, '#ef4444', true),
-    ('Restaurante', NULL, '#8b5cf6', true);
 
 -- View para estatísticas de refeições
 CREATE VIEW meal_statistics AS
@@ -314,7 +310,7 @@ ORDER BY data,
         WHEN 'jantar' THEN 3 
     END;
 
--- View para resumo de dívidas (quem deve para quem)
+-- View para resumo de dívidas
 CREATE VIEW debts_summary AS
 SELECT 
     ep.user_id as devedor_id,
@@ -352,20 +348,67 @@ HAVING SUM(
 ) > 0
 ORDER BY devedor_nome, credor_nome;
 
--- Comentários sobre as tabelas
+-- ========================================
+-- 5. COMENTÁRIOS
+-- ========================================
+
 COMMENT ON TABLE users IS 'Usuários do sistema (participantes da viagem)';
-COMMENT ON TABLE meals IS 'Refeições planejadas com responsáveis (cook, helper, dishwashers)';
+COMMENT ON COLUMN users.role IS 'Papel do usuário: admin (gerencia tudo) ou membro (usuário comum)';
+COMMENT ON COLUMN users.senha IS 'Hash bcrypt da senha do usuário';
+
+COMMENT ON TABLE meals IS 'Refeições planejadas com responsáveis';
 COMMENT ON TABLE drinks_poll IS 'Votação de bebidas para a viagem';
 COMMENT ON TABLE checklist IS 'Lista de tarefas e itens para não esquecer';
+COMMENT ON TABLE user_checklist_checked IS 'Sistema de riscar individual: cada usuário pode riscar itens essenciais';
 COMMENT ON TABLE experience IS 'Frases e temas de festa sugeridos pelos usuários';
-COMMENT ON TABLE market_items IS 'Lista de compras do mercado com categorias e preços';
-COMMENT ON TABLE meal_ingredients IS 'Relacionamento entre refeições e ingredientes do mercado';
-COMMENT ON TABLE expense_categories IS 'Categorias de despesas (customizáveis)';
-COMMENT ON TABLE expense_estimates IS 'Estimativas de gastos antes da viagem';
-COMMENT ON TABLE expense_estimate_participants IS 'Participantes de cada estimativa de gasto';
-COMMENT ON TABLE expenses IS 'Despesas reais durante/após a viagem';
-COMMENT ON TABLE expense_participants IS 'Participantes de cada despesa com valores e status de pagamento';
-COMMENT ON TABLE rides IS 'Caronas/viagens de carro com divisão de gasolina';
-COMMENT ON TABLE ride_passengers IS 'Passageiros de cada carona com contribuição';
-COMMENT ON VIEW meal_statistics IS 'Estatísticas de preenchimento das refeições';
-COMMENT ON VIEW debts_summary IS 'Resumo calculado: quem deve quanto para quem (apenas pendentes)';
+COMMENT ON TABLE market_items IS 'Lista de compras do mercado';
+COMMENT ON TABLE meal_ingredients IS 'Relacionamento entre refeições e ingredientes';
+COMMENT ON TABLE expense_categories IS 'Categorias de despesas customizáveis';
+COMMENT ON TABLE expense_estimates IS 'Estimativas de gastos pré-viagem';
+COMMENT ON TABLE expenses IS 'Despesas reais durante/após viagem';
+COMMENT ON TABLE rides IS 'Caronas com divisão de gasolina';
+
+-- ========================================
+-- 6. DADOS INICIAIS (SEED)
+-- ========================================
+
+-- Usuário Admin
+-- NOTA: Execute o script TypeScript run_auth_migration.ts para criar com senha hasheada
+-- Ou use o comando abaixo e substitua o hash:
+INSERT INTO users (nome, senha, role, titulo_engracado) 
+VALUES (
+  'Will',
+  '$2b$10$YourGeneratedHashHere',
+  'admin',
+  'O Mestre da Viagem 🎮'
+);
+
+-- NOTA: Não criamos usuários extras aqui.
+-- O admin Will poderá criar novos membros através do painel de administração.
+
+-- Bebidas para votação
+INSERT INTO drinks_poll (categoria, nome_bebida) VALUES
+('alc', 'Cerveja'),
+('alc', 'Vinho'),
+('alc', 'Caipirinha'),
+('alc', 'Shots'),
+('non-alc', 'Suco'),
+('non-alc', 'Refri Zero'),
+('non-alc', 'Refri Normal'),
+('non-alc', 'Agua com Gas');
+
+-- Categorias de despesas padrão
+INSERT INTO expense_categories (nome, icone, cor, is_system) VALUES
+('Aluguel', NULL, '#3b82f6', true),
+('Mercado', NULL, '#10b981', true),
+('Passeios', NULL, '#f59e0b', true),
+('Gasolina', NULL, '#ef4444', true),
+('Restaurante', NULL, '#8b5cf6', true);
+
+-- ========================================
+-- FINALIZAÇÃO
+-- ========================================
+
+\echo '✅ Database inicializado com sucesso!'
+\echo '⚠️  IMPORTANTE: Execute o script run_auth_migration.ts para criar o hash da senha do admin'
+\echo '    Comando: cd backend && npx tsx migrations/run_auth_migration.ts'

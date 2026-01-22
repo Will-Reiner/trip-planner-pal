@@ -71,10 +71,15 @@ const MealCard: React.FC<MealCardProps> = ({ meal }) => {
   const { currentUser } = useUser();
   const { toast } = useToast();
 
+  // Carregar ingredientes quando o componente monta ou quando meal.id muda
+  useEffect(() => {
+    loadMealIngredients();
+  }, [meal.id, data.meals.length]); // Recarrega também quando a lista de meals muda
+
+  // Carregar market items apenas quando abre o dialog de gerenciar
   useEffect(() => {
     if (isIngredientsDialogOpen) {
       loadMarketItems();
-      loadMealIngredients();
     }
   }, [isIngredientsDialogOpen]);
 
