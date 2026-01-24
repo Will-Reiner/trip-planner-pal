@@ -6,7 +6,7 @@ const createAdmin = async () => {
     host: 'localhost',
     port: 5433,
     user: 'postgres',
-    password: 'postgres',
+    password: 'Senhamuitofoda123',
     database: 'trip_planner',
   });
 
