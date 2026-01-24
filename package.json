@@ -1,5 +1,8 @@
 {
   "name": "vite_react_shadcn_ts",
+  "engines": {
+  "node": ">=20.0.0"
+  },
   "private": true,
   "version": "0.0.0",
   "type": "module",
