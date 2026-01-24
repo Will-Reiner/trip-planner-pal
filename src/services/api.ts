@@ -1,8 +1,25 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL;
+// Função para determinar a URL da API em runtime
+const getApiUrl = () => {
+  // Se estiver em produção (domínio específico), usar a URL de produção
+  if (window.location.hostname === 'rebolahub.astraflow.io') {
+    return 'https://tripback.astraflow.io/api';
+  }
+  
+  // Se tiver a variável de ambiente configurada, usar ela
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+  
+  // Fallback para desenvolvimento local
+  return 'http://localhost:3001/api';
+};
+
+const API_URL = getApiUrl();
 
 console.log('🔗 API URL configurada:', API_URL);
+console.log('🌍 Hostname atual:', window.location.hostname);
 
 const api = axios.create({
   baseURL: API_URL,
