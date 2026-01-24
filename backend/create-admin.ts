@@ -3,11 +3,7 @@ import { Client } from 'pg';
 
 const createAdmin = async () => {
   const client = new Client({
-    host: 'localhost',
-    port: 5433,
-    user: 'postgres',
-    password: 'Senhamuitofoda123',
-    database: 'trip_planner',
+    connectionString: process.env.DATABASE_URL,
   });
 
   try {
