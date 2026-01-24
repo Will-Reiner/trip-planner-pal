@@ -10,16 +10,19 @@ export const getAllRides = async (req: Request, res: Response) => {
         r.*,
         m.nome as motorista_nome,
         m.avatar_url as motorista_avatar,
-        json_agg(
-          json_build_object(
-            'id', rp.id,
-            'user_id', rp.user_id,
-            'user_nome', u.nome,
-            'user_avatar', u.avatar_url,
-            'contribuicao', rp.contribuicao,
-            'pagamento_confirmado', rp.pagamento_confirmado
-          )
-        ) FILTER (WHERE rp.id IS NOT NULL) as passageiros
+        COALESCE(
+          json_agg(
+            json_build_object(
+              'id', rp.id,
+              'user_id', rp.user_id,
+              'user_nome', u.nome,
+              'user_avatar', u.avatar_url,
+              'contribuicao', rp.contribuicao,
+              'pagamento_confirmado', rp.pagamento_confirmado
+            )
+          ) FILTER (WHERE rp.id IS NOT NULL),
+          '[]'::json
+        ) as passageiros
       FROM rides r
       LEFT JOIN users m ON r.motorista_id = m.id
       LEFT JOIN ride_passengers rp ON r.id = rp.ride_id

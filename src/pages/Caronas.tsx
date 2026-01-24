@@ -500,8 +500,9 @@ const Caronas = () => {
         ) : (
           rides.map(ride => {
             const isDriver = ride.motorista_id === currentUser?.id;
-            const isPassenger = ride.passageiros.some(p => p.user_id === currentUser?.id);
-            const availableSeats = 4 - ride.passageiros.length;
+            const passageiros = ride.passageiros || [];
+            const isPassenger = passageiros.some(p => p.user_id === currentUser?.id);
+            const availableSeats = 4 - passageiros.length;
             const isFull = availableSeats <= 0;
 
             return (
@@ -565,14 +566,14 @@ const Caronas = () => {
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-medium">
-                      Passageiros ({ride.passageiros.length}/4)
+                      Passageiros ({passageiros.length}/4)
                     </span>
                     <Badge variant={isFull ? 'destructive' : 'secondary'}>
                       {isFull ? 'Lotado' : `${availableSeats} vagas`}
                     </Badge>
                   </div>
                   <div className="flex gap-1 flex-wrap">
-                    {ride.passageiros.map(p => (
+                    {passageiros.map(p => (
                       <Badge key={p.user_id} variant="outline" className="text-xs">
                         {p.user_nome}
                       </Badge>
