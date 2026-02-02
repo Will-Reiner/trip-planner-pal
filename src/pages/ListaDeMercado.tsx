@@ -59,6 +59,12 @@ interface MarketItem {
   meals?: IngredientMeal[];
 }
 
+type RawMarketItem = Omit<MarketItem, 'quantidade' | 'valor_por_porcao' | 'tamanho_porcao'> & {
+  quantidade: number | string;
+  valor_por_porcao?: number | string | null;
+  tamanho_porcao?: number | string | null;
+};
+
 const categories = [
   { value: 'acougue', label: '🥩 Açougue', emoji: '🥩' },
   { value: 'hortifruti', label: '🥬 Hortifruti', emoji: '🥬' },
@@ -103,7 +109,7 @@ const ListaDeMercado = () => {
       const itemsData = response.data.data || [];
       
       // Normalizar valores numéricos (PostgreSQL pode retornar strings para DECIMAL)
-      const normalizedItems = itemsData.map((item: any) => ({
+      const normalizedItems = (itemsData as RawMarketItem[]).map(item => ({
         ...item,
         quantidade: Number(item.quantidade) || 0,
         valor_por_porcao: item.valor_por_porcao ? Number(item.valor_por_porcao) : undefined,

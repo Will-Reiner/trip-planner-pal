@@ -1,5 +1,90 @@
 import { Request, Response } from 'express';
+import type { PoolClient } from 'pg';
 import pool from '../config/database';
+
+const getOrCreateGasolinaCategoryId = async (client: PoolClient) => {
+  const existing = await client.query(
+    "SELECT id FROM expense_categories WHERE nome = 'Gasolina' LIMIT 1"
+  );
+
+  if (existing.rows.length > 0) {
+    return existing.rows[0].id as number;
+  }
+
+  const created = await client.query(
+    'INSERT INTO expense_categories (nome, icone, cor, is_system) VALUES ($1, $2, $3, true) RETURNING id',
+    ['Gasolina', null, '#ef4444']
+  );
+
+  return created.rows[0].id as number;
+};
+
+const syncGasolinaExpenses = async () => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    const gasolinaCategoryId = await getOrCreateGasolinaCategoryId(client);
+
+    const ridesResult = await client.query(
+      `SELECT id, titulo, motorista_id, valor_gasolina, expense_id
+       FROM rides
+       WHERE valor_gasolina IS NOT NULL AND valor_gasolina > 0`
+    );
+
+    for (const ride of ridesResult.rows) {
+      let expenseId = ride.expense_id as number | null;
+
+      if (!expenseId) {
+        const expenseResult = await client.query(
+          `INSERT INTO expenses (category_id, descricao, valor_total, pagador_id)
+           VALUES ($1, $2, $3, $4) RETURNING id`,
+          [gasolinaCategoryId, `Gasolina - ${ride.titulo}`, ride.valor_gasolina, ride.motorista_id]
+        );
+        expenseId = expenseResult.rows[0].id as number;
+
+        await client.query(
+          'UPDATE rides SET expense_id = $1 WHERE id = $2',
+          [expenseId, ride.id]
+        );
+      } else {
+        await client.query(
+          'UPDATE expenses SET descricao = $1, valor_total = $2 WHERE id = $3',
+          [`Gasolina - ${ride.titulo}`, ride.valor_gasolina, expenseId]
+        );
+      }
+
+      const passengersResult = await client.query(
+        'SELECT user_id FROM ride_passengers WHERE ride_id = $1',
+        [ride.id]
+      );
+
+      const totalPeople = passengersResult.rows.length + 1;
+      const valorIndividual = Number(ride.valor_gasolina) / totalPeople;
+
+      await client.query('DELETE FROM expense_participants WHERE expense_id = $1', [expenseId]);
+
+      await client.query(
+        'INSERT INTO expense_participants (expense_id, user_id, valor_individual) VALUES ($1, $2, $3)',
+        [expenseId, ride.motorista_id, valorIndividual]
+      );
+
+      for (const passenger of passengersResult.rows) {
+        await client.query(
+          'INSERT INTO expense_participants (expense_id, user_id, valor_individual) VALUES ($1, $2, $3)',
+          [expenseId, passenger.user_id, valorIndividual]
+        );
+      }
+    }
+
+    await client.query('COMMIT');
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Erro ao sincronizar despesas de gasolina:', error);
+  } finally {
+    client.release();
+  }
+};
 
 // ============= EXPENSE CATEGORIES =============
 
@@ -29,8 +114,12 @@ export const createCategory = async (req: Request, res: Response) => {
     );
     
     res.status(201).json({ success: true, data: result.rows[0] });
-  } catch (error: any) {
-    if (error.code === '23505') {
+  } catch (error: unknown) {
+    const errorCode =
+      typeof error === 'object' && error !== null && 'code' in error
+        ? (error as { code?: string }).code
+        : undefined;
+    if (errorCode === '23505') {
       return res.status(409).json({ success: false, error: 'Categoria já existe' });
     }
     console.error('Erro ao criar categoria:', error);
@@ -196,6 +285,7 @@ export const deleteEstimate = async (req: Request, res: Response) => {
 
 export const getAllExpenses = async (req: Request, res: Response) => {
   try {
+    await syncGasolinaExpenses();
     const result = await pool.query(`
       SELECT 
         e.*,

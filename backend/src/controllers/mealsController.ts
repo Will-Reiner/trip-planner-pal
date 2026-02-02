@@ -93,10 +93,14 @@ export const createMeal = async (req: Request, res: Response) => {
     );
     
     res.status(201).json({ success: true, data: result.rows[0] });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Erro ao criar refeição:', error);
-    
-    if (error.code === '23505') {
+    const errorCode =
+      typeof error === 'object' && error !== null && 'code' in error
+        ? (error as { code?: string }).code
+        : undefined;
+
+    if (errorCode === '23505') {
       return res.status(409).json({ 
         success: false, 
         error: 'Já existe uma refeição deste tipo nesta data' 

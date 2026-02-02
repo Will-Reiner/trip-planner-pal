@@ -37,9 +37,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+import api from '@/services/api';
 
 interface Category {
   id: number;
@@ -126,10 +124,10 @@ const Custos = () => {
     try {
       setLoading(true);
       const [categoriesRes, estimatesRes, expensesRes, debtsRes] = await Promise.all([
-        axios.get(`${API_URL}/finances/categories`),
-        axios.get(`${API_URL}/finances/estimates`),
-        axios.get(`${API_URL}/finances/expenses`),
-        axios.get(`${API_URL}/finances/debts-summary`),
+        api.get('/finances/categories'),
+        api.get('/finances/estimates'),
+        api.get('/finances/expenses'),
+        api.get('/finances/debts-summary'),
       ]);
       
       setCategories(categoriesRes.data.data || []);
@@ -159,7 +157,7 @@ const Custos = () => {
     }
 
     try {
-      await axios.post(`${API_URL}/finances/estimates`, {
+      await api.post('/finances/estimates', {
         ...estimateForm,
         valor_estimado: parseFloat(estimateForm.valor_estimado),
         criado_por_id: currentUser?.id,
@@ -190,7 +188,7 @@ const Custos = () => {
     }
 
     try {
-      await axios.post(`${API_URL}/finances/expenses`, {
+      await api.post('/finances/expenses', {
         ...expenseForm,
         valor_total: parseFloat(expenseForm.valor_total),
         participantes: expenseForm.participantes.map(p => ({
@@ -221,7 +219,7 @@ const Custos = () => {
 
   const handleConfirmPayment = async (expenseId: number, userId: number) => {
     try {
-      await axios.patch(`${API_URL}/finances/expenses/confirm-payment`, {
+      await api.patch('/finances/expenses/confirm-payment', {
         expense_id: expenseId,
         user_id: userId,
       });
@@ -234,7 +232,7 @@ const Custos = () => {
 
   const handleDeleteEstimate = async (id: number) => {
     try {
-      await axios.delete(`${API_URL}/finances/estimates/${id}`);
+      await api.delete(`/finances/estimates/${id}`);
       toast({ title: 'Estimativa removida!' });
       loadAllData();
     } catch (error) {
@@ -244,7 +242,7 @@ const Custos = () => {
 
   const handleDeleteExpense = async (id: number) => {
     try {
-      await axios.delete(`${API_URL}/finances/expenses/${id}`);
+      await api.delete(`/finances/expenses/${id}`);
       toast({ title: 'Despesa removida!' });
       loadAllData();
     } catch (error) {

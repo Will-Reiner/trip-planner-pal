@@ -32,18 +32,19 @@ interface Item {
   id: number;
   name: string;
   assignee: number | null;
+  created_by_id?: number | null;
 }
 
 interface Task {
   id: number;
   name: string;
   assignee: number | null;
+  created_by_id?: number | null;
 }
 
 interface Essential {
   id: number;
   name: string;
-  checked: boolean;
   is_checked_by_user?: boolean;
   created_by_id?: number | null;
 }
@@ -86,6 +87,8 @@ interface TripDataContextType {
   assignCommunityItem: (itemId: number, userId: number | null) => void;
   addTask: (name: string) => void;
   assignTask: (taskId: number, userId: number | null) => void;
+  deleteCommunityItem: (itemId: number) => void;
+  deleteTask: (taskId: number) => void;
   addEssential: (name: string) => void;
   toggleEssential: (essentialId: number) => void;
   deleteEssential: (essentialId: number) => void;
@@ -111,10 +114,10 @@ export const TripDataProvider: React.FC<{ children: ReactNode }> = ({ children }
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  // Carregar dados iniciais
+  // Carregar dados iniciais e quando o usuário mudar
   useEffect(() => {
     loadAllData();
-  }, []);
+  }, [currentUser?.id]);
 
   const loadAllData = async () => {
     try {
@@ -188,7 +191,8 @@ export const TripDataProvider: React.FC<{ children: ReactNode }> = ({ children }
         .map(c => ({
           id: c.id,
           name: c.descricao,
-          assignee: c.owner_id
+          assignee: c.owner_id,
+          created_by_id: c.created_by_id
         }));
 
       const tasks = checklist
@@ -196,7 +200,8 @@ export const TripDataProvider: React.FC<{ children: ReactNode }> = ({ children }
         .map(c => ({
           id: c.id,
           name: c.descricao,
-          assignee: c.owner_id
+          assignee: c.owner_id,
+          created_by_id: c.created_by_id
         }));
 
       const essentials = checklist
@@ -204,7 +209,7 @@ export const TripDataProvider: React.FC<{ children: ReactNode }> = ({ children }
         .map(c => ({
           id: c.id,
           name: c.descricao,
-          checked: c.is_checked_by_user || false, // Usa status individual do usuário
+          is_checked_by_user: c.is_checked_by_user || false,
           created_by_id: c.created_by_id
         }));
 
@@ -355,7 +360,8 @@ export const TripDataProvider: React.FC<{ children: ReactNode }> = ({ children }
     try {
       const newItem = await api.createChecklistItem({
         categoria: 'item',
-        descricao: name
+        descricao: name,
+        created_by_id: currentUser?.id
       });
       setData(prev => ({
         ...prev,
@@ -389,7 +395,8 @@ export const TripDataProvider: React.FC<{ children: ReactNode }> = ({ children }
     try {
       const newTask = await api.createChecklistItem({
         categoria: 'tarefa',
-        descricao: name
+        descricao: name,
+        created_by_id: currentUser?.id
       });
       setData(prev => ({
         ...prev,
@@ -416,15 +423,42 @@ export const TripDataProvider: React.FC<{ children: ReactNode }> = ({ children }
     }
   };
 
+  const deleteCommunityItem = async (itemId: number) => {
+    try {
+      await api.deleteChecklistItem(itemId);
+      setData(prev => ({
+        ...prev,
+        communityItems: prev.communityItems.filter(item => item.id !== itemId)
+      }));
+      toast({ title: 'Item removido com sucesso!' });
+    } catch (error) {
+      toast({ title: 'Erro ao remover item', variant: 'destructive' });
+    }
+  };
+
+  const deleteTask = async (taskId: number) => {
+    try {
+      await api.deleteChecklistItem(taskId);
+      setData(prev => ({
+        ...prev,
+        tasks: prev.tasks.filter(task => task.id !== taskId)
+      }));
+      toast({ title: 'Tarefa removida com sucesso!' });
+    } catch (error) {
+      toast({ title: 'Erro ao remover tarefa', variant: 'destructive' });
+    }
+  };
+
   const addEssential = async (name: string) => {
     try {
       const newEssential = await api.createChecklistItem({
         categoria: 'nao_esqueca',
-        descricao: name
+        descricao: name,
+        created_by_id: currentUser?.id
       });
       setData(prev => ({
         ...prev,
-        essentials: [...prev.essentials, { id: newEssential.id, name: newEssential.descricao, checked: false }]
+        essentials: [...prev.essentials, { id: newEssential.id, name: newEssential.descricao, is_checked_by_user: false }]
       }));
       toast({ title: 'Item essencial adicionado!' });
     } catch (error) {
@@ -442,7 +476,7 @@ export const TripDataProvider: React.FC<{ children: ReactNode }> = ({ children }
       setData(prev => ({
         ...prev,
         essentials: prev.essentials.map(e =>
-          e.id === essentialId ? { ...e, checked: result.checked } : e
+          e.id === essentialId ? { ...e, is_checked_by_user: result.checked } : e
         )
       }));
       
@@ -525,6 +559,8 @@ export const TripDataProvider: React.FC<{ children: ReactNode }> = ({ children }
       assignCommunityItem,
       addTask,
       assignTask,
+      deleteCommunityItem,
+      deleteTask,
       addEssential,
       toggleEssential,
       deleteEssential,
