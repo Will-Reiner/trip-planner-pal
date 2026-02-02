@@ -56,10 +56,25 @@ const Gastronomia = () => {
   const [selectedIngredients, setSelectedIngredients] = useState<number[]>([]);
   const [loadingItems, setLoadingItems] = useState(false);
 
+  // Estados para criar bebida
+  const [isAddDrinkOpen, setIsAddDrinkOpen] = useState(false);
+  const [drinkName, setDrinkName] = useState('');
+  const [drinkEmoji, setDrinkEmoji] = useState('');
+  const [drinkCategory, setDrinkCategory] = useState<string>('alc');
+  const [activeTab, setActiveTab] = useState(() => {
+    const saved = sessionStorage.getItem('gastronomia_active_drink_tab');
+    return saved || 'alcoholic';
+  });
+
   // Salvar dia selecionado no localStorage sempre que mudar
   useEffect(() => {
     localStorage.setItem('gastronomia_selected_day', selectedDay.toString());
   }, [selectedDay]);
+
+  // Salvar aba ativa de bebidas no sessionStorage
+  useEffect(() => {
+    sessionStorage.setItem('gastronomia_active_drink_tab', activeTab);
+  }, [activeTab]);
 
   const days = [14, 15, 16, 17];
   const mealsForDay = data.meals.filter(m => m.day === selectedDay);
@@ -194,8 +209,65 @@ const Gastronomia = () => {
     }
   };
 
-  const totalAlcoholicVotes = data.drinks.alcoholic.reduce((acc, d) => acc + d.votes.length, 0);
-  const totalNonAlcoholicVotes = data.drinks.nonAlcoholic.reduce((acc, d) => acc + d.votes.length, 0);
+  const handleAddDrink = async () => {
+    if (!drinkName.trim()) {
+      toast({
+        title: 'Nome obrigatório',
+        description: 'Digite o nome da bebida',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!drinkEmoji.trim()) {
+      toast({
+        title: 'Emoji obrigatório',
+        description: 'Digite um emoji para a bebida',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!currentUser) {
+      toast({
+        title: 'Erro',
+        description: 'Você precisa estar logado',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      await axios.post(`${API_URL}/drinks`, {
+        categoria: drinkCategory,
+        nome_bebida: drinkName,
+        emoji: drinkEmoji,
+        created_by: currentUser.id,
+      });
+
+      toast({
+        title: 'Sucesso!',
+        description: 'Bebida criada com sucesso',
+      });
+
+      // Resetar form
+      setDrinkName('');
+      setDrinkEmoji('');
+      setDrinkCategory('alc');
+      setIsAddDrinkOpen(false);
+
+      // Recarregar dados
+      await reloadData();
+
+    } catch (error: any) {
+      console.error('Erro ao adicionar bebida:', error);
+      toast({
+        title: 'Erro',
+        description: error.response?.data?.error || 'Não foi possível adicionar a bebida',
+        variant: 'destructive',
+      });
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -278,18 +350,34 @@ const Gastronomia = () => {
           </Button>
         </div>
 
+        {/* Bebidas Section */}
+        <div className="mb-4">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold flex items-center gap-2">
+              <Wine className="w-5 h-5" />
+              Bebidas
+            </h2>
+            <Button 
+              onClick={() => setIsAddDrinkOpen(true)}
+              size="sm"
+              className="gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Adicionar
+            </Button>
+          </div>
+        </div>
+
         {/* Drink Voting */}
-        <Tabs defaultValue="alcoholic" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-4">
             <TabsTrigger value="alcoholic" className="gap-2">
               <Wine className="w-4 h-4" />
               Alcoólicas
-              <Badge variant="secondary" className="ml-1">{totalAlcoholicVotes}</Badge>
             </TabsTrigger>
             <TabsTrigger value="nonAlcoholic" className="gap-2">
               <Coffee className="w-4 h-4" />
               Sem Álcool
-              <Badge variant="secondary" className="ml-1">{totalNonAlcoholicVotes}</Badge>
             </TabsTrigger>
           </TabsList>
           
@@ -302,6 +390,68 @@ const Gastronomia = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Dialog Adicionar Bebida */}
+      <Dialog open={isAddDrinkOpen} onOpenChange={setIsAddDrinkOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Adicionar Bebida</DialogTitle>
+            <DialogDescription>
+              Crie uma nova bebida e convide pessoas para o racha!
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            {/* Nome da Bebida */}
+            <div className="grid gap-2">
+              <Label htmlFor="drink-name">Nome da Bebida *</Label>
+              <Input
+                id="drink-name"
+                value={drinkName}
+                onChange={(e) => setDrinkName(e.target.value)}
+                placeholder="Ex: Cerveja Artesanal, Vodka..."
+              />
+            </div>
+
+            {/* Emoji */}
+            <div className="grid gap-2">
+              <Label htmlFor="drink-emoji">Emoji *</Label>
+              <Input
+                id="drink-emoji"
+                value={drinkEmoji}
+                onChange={(e) => setDrinkEmoji(e.target.value)}
+                placeholder="Ex: 🍺 🍷 🍹 🥃"
+                maxLength={10}
+              />
+              <p className="text-xs text-muted-foreground">
+                Cole um emoji ou use vários emojis para representar a bebida
+              </p>
+            </div>
+
+            {/* Categoria */}
+            <div className="grid gap-2">
+              <Label htmlFor="drink-category">Categoria</Label>
+              <Select value={drinkCategory} onValueChange={setDrinkCategory}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione a categoria" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="alc">🍺 Alcoólica</SelectItem>
+                  <SelectItem value="non-alc">🥤 Sem Álcool</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddDrinkOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleAddDrink}>
+              <Plus className="w-4 h-4 mr-2" />
+              Criar Bebida
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Dialog Adicionar Refeição */}
       <Dialog open={isAddMealOpen} onOpenChange={setIsAddMealOpen}>

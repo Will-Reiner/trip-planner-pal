@@ -2,20 +2,38 @@ import { useState, useEffect } from 'react';
 import { useTripData } from '../contexts/TripDataContext';
 import { useUser } from '../contexts/UserContext';
 import BottomNav from '../components/BottomNav';
-import { Sparkles, Music, PartyPopper, MessageCircle, Users, Send, Check, Calendar } from 'lucide-react';
+import { Sparkles, Music, PartyPopper, MessageCircle, Users, Send, Check, Calendar, Sun, Sunset, Moon, Plus, ThumbsUp, ThumbsDown, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+
+// Schedule Component
+const ScheduleView = () => {
+  return (
+    <div className="bg-card rounded-2xl border border-border p-8 text-center">
+      <Calendar className="w-12 h-12 mx-auto mb-3 text-muted-foreground opacity-50" />
+      <p className="text-lg font-medium text-muted-foreground mb-2">Em breve...</p>
+      <p className="text-sm text-muted-foreground">Cronograma detalhado será divulgado em breve!</p>
+    </div>
+  );
+};
 
 const Experience = () => {
-  const { data, votePartyTheme, addQuote, updateParticipant } = useTripData();
+  const { data, votePartyTheme, removeVotePartyTheme, addPartyTheme, deletePartyTheme, addQuote, updateParticipant } = useTripData();
   const { currentUser } = useUser();
   const [newQuote, setNewQuote] = useState('');
   const [editingTitle, setEditingTitle] = useState<number | null>(null);
   const [titleInput, setTitleInput] = useState('');
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+  const [showThemeDialog, setShowThemeDialog] = useState(false);
+  const [newTheme, setNewTheme] = useState({ nome: '', descricao: '', cor_card: '#8b5cf6' });
 
   const tripDate = new Date('2026-02-14T00:00:00'); // Data da trip
 
@@ -41,8 +59,6 @@ const Experience = () => {
     return () => clearInterval(timer);
   }, []);
 
-  const totalThemeVotes = data.partyThemes.reduce((acc, t) => acc + t.votes.length, 0);
-
   const handleAddQuote = () => {
     if (newQuote.trim() && currentUser) {
       addQuote(newQuote.trim(), currentUser.id);
@@ -50,9 +66,32 @@ const Experience = () => {
     }
   };
 
-  const handleVoteTheme = (themeId: number) => {
-    if (currentUser) {
-      votePartyTheme(themeId, currentUser.id);
+  const handleAddTheme = () => {
+    if (newTheme.nome.trim()) {
+      addPartyTheme(newTheme.nome, newTheme.descricao, newTheme.cor_card);
+      setNewTheme({ nome: '', descricao: '', cor_card: '#8b5cf6' });
+      setShowThemeDialog(false);
+    }
+  };
+
+  const handleVoteTheme = (themeId: number, voteType: 'positive' | 'negative') => {
+    if (!currentUser) return;
+    
+    const theme = data.partyThemes.find(t => t.id === themeId);
+    if (!theme) return;
+
+    // Se já votou no mesmo tipo, remove o voto
+    if (theme.userVote === voteType) {
+      removeVotePartyTheme(themeId);
+    } else {
+      // Senão, adiciona ou altera o voto
+      votePartyTheme(themeId, voteType);
+    }
+  };
+
+  const handleDeleteTheme = (themeId: number) => {
+    if (confirm('Tem certeza que deseja deletar este tema?')) {
+      deletePartyTheme(themeId);
     }
   };
 
@@ -73,37 +112,14 @@ const Experience = () => {
       {/* Header */}
       <div className="bg-gradient-to-br from-primary/30 to-accent p-6 pt-8">
         <div className="max-w-md mx-auto">
-          <div className="flex items-center gap-3 mb-2">
+          <div className="flex items-center gap-3">
             <Sparkles className="w-6 h-6 text-primary" />
             <h1 className="text-2xl font-bold text-foreground">Rebola's Experience</h1>
           </div>
-          <p className="text-muted-foreground">
-            A experiência completa! 🎊
-          </p>
         </div>
       </div>
 
       <div className="max-w-md mx-auto p-4 space-y-8">
-        {/* Spotify Embed */}
-        <section className="space-y-3">
-          <div className="flex items-center gap-2 mb-4">
-            <Music className="w-5 h-5 text-primary" />
-            <h2 className="text-lg font-bold text-foreground">Playlist da Trip</h2>
-          </div>
-          <div className="bg-card rounded-2xl border border-border overflow-hidden">
-            <iframe 
-              src="https://open.spotify.com/embed/playlist/3v4KHoOj2ac4XmaQy4hMPQ?utm_source=generator" 
-              width="100%" 
-              height="352" 
-              frameBorder="0" 
-              allowFullScreen
-              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
-              loading="lazy"
-              className="rounded-2xl"
-            ></iframe>
-          </div>
-        </section>
-
         {/* Countdown */}
         <section className="space-y-3">
           <div className="bg-gradient-to-br from-purple-600 via-pink-500 to-orange-500 rounded-3xl p-6 text-center shadow-xl">
@@ -139,47 +155,202 @@ const Experience = () => {
 
         {/* Party Theme Voting */}
         <section className="space-y-3">
-          <div className="flex items-center gap-2 mb-4">
-            <PartyPopper className="w-5 h-5 text-primary" />
-            <h2 className="text-lg font-bold text-foreground">Tema da Festa</h2>
-            <Badge variant="secondary">{totalThemeVotes} votos</Badge>
-          </div>
-          <div className="space-y-3">
-            {data.partyThemes.map(theme => {
-              const hasVoted = currentUser && theme.votes.includes(currentUser.id);
-              const percentage = totalThemeVotes > 0
-                ? (theme.votes.length / totalThemeVotes) * 100
-                : 0;
-
-              return (
-                <button
-                  key={theme.id}
-                  onClick={() => handleVoteTheme(theme.id)}
-                  className={`w-full p-4 rounded-2xl border-2 transition-all duration-200 text-left ${
-                    hasVoted
-                      ? 'border-primary bg-primary/10'
-                      : 'border-border bg-card hover:border-primary/50'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xl">{theme.emoji}</span>
-                      <span className="font-medium text-foreground">{theme.name}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-muted-foreground">
-                        {theme.votes.length}
-                      </span>
-                      {hasVoted && (
-                        <Check className="w-4 h-4 text-primary" />
-                      )}
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <PartyPopper className="w-5 h-5 text-primary" />
+                <h2 className="text-lg font-bold text-foreground">Festas</h2>
+              </div>
+              <p className="text-sm text-muted-foreground mt-1">
+                Lembrando que teremos 3 noites de curtição!
+              </p>
+            </div>
+            <Dialog open={showThemeDialog} onOpenChange={setShowThemeDialog}>
+              <DialogTrigger asChild>
+                <Button size="icon" variant="outline">
+                  <Plus className="w-4 h-4" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Criar Novo Tema</DialogTitle>
+                  <DialogDescription>
+                    Sugira um tema para as festas da viagem!
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="nome">Nome do Tema</Label>
+                    <Input
+                      id="nome"
+                      value={newTheme.nome}
+                      onChange={(e) => setNewTheme({ ...newTheme, nome: e.target.value })}
+                      placeholder="Ex: Anos 80, Neon, Tropical..."
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="descricao">Descrição/Ideias</Label>
+                    <Textarea
+                      id="descricao"
+                      value={newTheme.descricao}
+                      onChange={(e) => setNewTheme({ ...newTheme, descricao: e.target.value })}
+                      placeholder="Descreva o tema e dê ideias de roupas, decoração..."
+                      rows={4}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="cor">Cor do Card</Label>
+                    <div className="flex gap-2 items-center">
+                      <input
+                        type="color"
+                        id="cor"
+                        value={newTheme.cor_card}
+                        onChange={(e) => setNewTheme({ ...newTheme, cor_card: e.target.value })}
+                        className="h-10 w-20 rounded cursor-pointer"
+                      />
+                      <Input
+                        value={newTheme.cor_card}
+                        onChange={(e) => setNewTheme({ ...newTheme, cor_card: e.target.value })}
+                        placeholder="#8b5cf6"
+                        className="flex-1"
+                      />
                     </div>
                   </div>
-                  <Progress value={percentage} className="h-2" />
-                </button>
-              );
-            })}
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setShowThemeDialog(false)}>
+                    Cancelar
+                  </Button>
+                  <Button onClick={handleAddTheme}>
+                    Criar Tema
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
+          
+          <div className="space-y-3">
+            {data.partyThemes.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <PartyPopper className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                <p>Nenhum tema ainda...</p>
+                <p className="text-sm">Seja o primeiro a sugerir!</p>
+              </div>
+            ) : (
+              data.partyThemes.map(theme => {
+                const totalVotes = theme.positive_votes + theme.negative_votes;
+                const positivePercentage = totalVotes > 0 
+                  ? (theme.positive_votes / totalVotes) * 100 
+                  : 0;
+                const negativePercentage = totalVotes > 0 
+                  ? (theme.negative_votes / totalVotes) * 100 
+                  : 0;
+
+                return (
+                  <div
+                    key={theme.id}
+                    className="rounded-2xl border-2 border-border overflow-hidden transition-all duration-200"
+                    style={{ 
+                      backgroundColor: `${theme.cor_card}15`,
+                      borderColor: theme.cor_card
+                    }}
+                  >
+                    <div className="p-4">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <h3 className="font-bold text-lg text-foreground mb-1">
+                            {theme.nome}
+                          </h3>
+                          {theme.descricao && (
+                            <p className="text-sm text-muted-foreground mb-2">
+                              {theme.descricao}
+                            </p>
+                          )}
+                          {theme.autor_nome && (
+                            <p className="text-xs text-muted-foreground">
+                              Sugerido por {theme.autor_nome}
+                            </p>
+                          )}
+                        </div>
+                        {currentUser && (currentUser.role === 'admin' || theme.autor_id === currentUser.id) && (
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => handleDeleteTheme(theme.id)}
+                            className="ml-2 text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
+
+                      {/* Vote Bars */}
+                      <div className="space-y-2 mb-3">
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-xs">
+                            <span className="text-muted-foreground">👍 Curtidas</span>
+                            <span className="font-medium">{theme.positive_votes} votos</span>
+                          </div>
+                          <Progress 
+                            value={positivePercentage} 
+                            className="h-2"
+                            style={{ 
+                              '--progress-background': theme.cor_card 
+                            } as React.CSSProperties}
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-xs">
+                            <span className="text-muted-foreground">👎 Não curti</span>
+                            <span className="font-medium">{theme.negative_votes} votos</span>
+                          </div>
+                          <Progress 
+                            value={negativePercentage} 
+                            className="h-2 bg-destructive/20"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Vote Buttons */}
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant={theme.userVote === 'positive' ? 'default' : 'outline'}
+                          onClick={() => handleVoteTheme(theme.id, 'positive')}
+                          className="flex-1"
+                          style={theme.userVote === 'positive' ? {
+                            backgroundColor: theme.cor_card,
+                            borderColor: theme.cor_card
+                          } : {}}
+                        >
+                          <ThumbsUp className="w-4 h-4 mr-2" />
+                          To dentro
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant={theme.userVote === 'negative' ? 'destructive' : 'outline'}
+                          onClick={() => handleVoteTheme(theme.id, 'negative')}
+                          className="flex-1"
+                        >
+                          <ThumbsDown className="w-4 h-4 mr-2" />
+                          Não gostei
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </section>
+
+        {/* Schedule (Cronograma) */}
+        <section className="space-y-3">
+          <div className="flex items-center gap-2 mb-4">
+            <Calendar className="w-5 h-5 text-primary" />
+            <h2 className="text-lg font-bold text-foreground">Cronograma</h2>
+          </div>
+          <ScheduleView />
         </section>
 
         {/* Quotes Wall */}
@@ -269,6 +440,26 @@ const Experience = () => {
                 )}
               </div>
             ))}
+          </div>
+        </section>
+
+        {/* Spotify Embed */}
+        <section className="space-y-3">
+          <div className="flex items-center gap-2 mb-4">
+            <Music className="w-5 h-5 text-primary" />
+            <h2 className="text-lg font-bold text-foreground">Playlist da Trip</h2>
+          </div>
+          <div className="bg-card rounded-2xl border border-border overflow-hidden">
+            <iframe 
+              src="https://open.spotify.com/embed/playlist/3v4KHoOj2ac4XmaQy4hMPQ?utm_source=generator" 
+              width="100%" 
+              height="352" 
+              frameBorder="0" 
+              allowFullScreen
+              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
+              loading="lazy"
+              className="rounded-2xl"
+            ></iframe>
           </div>
         </section>
       </div>

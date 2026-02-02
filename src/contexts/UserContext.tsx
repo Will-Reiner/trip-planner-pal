@@ -4,11 +4,13 @@ interface User {
   id: number;
   name: string;
   photo: string | null;
+  role?: string;
 }
 
 interface UserContextType {
   currentUser: User | null;
   setCurrentUser: (user: User | null) => void;
+  isAdmin: () => boolean;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -44,9 +46,13 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       localStorage.removeItem(STORAGE_KEY);
     }
   }, [currentUser]);
+  
+  const isAdmin = () => {
+    return currentUser?.role === 'admin';
+  };
 
   return (
-    <UserContext.Provider value={{ currentUser, setCurrentUser }}>
+    <UserContext.Provider value={{ currentUser, setCurrentUser, isAdmin }}>
       {children}
     </UserContext.Provider>
   );

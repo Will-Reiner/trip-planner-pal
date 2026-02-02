@@ -48,7 +48,8 @@ const Login = () => {
       setCurrentUser({
         id: user.id,
         name: user.nome,
-        photo: user.avatar_url
+        photo: user.avatar_url,
+        role: user.role
       });
 
       toast({
@@ -57,7 +58,7 @@ const Login = () => {
       });
 
       // Redirecionar para página principal
-      navigate('/gastronomia');
+      navigate('/experience');
 
     } catch (error: unknown) {
       console.error('Erro no login:', error);

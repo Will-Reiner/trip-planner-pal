@@ -93,7 +93,10 @@ export interface Drink {
   id: number;
   categoria: 'alc' | 'non-alc';
   nome_bebida: string;
-  votos: number;
+  emoji: string;
+  created_by: number | null;
+  created_by_nome: string | null;
+  participants: { user_id: number; user_nome: string }[];
 }
 
 export interface ChecklistItem {
@@ -182,14 +185,24 @@ export const getDrinksByCategory = async (category: 'alc' | 'non-alc') => {
   return response.data.data;
 };
 
-export const createDrink = async (drinkData: { categoria: 'alc' | 'non-alc'; nome_bebida: string }) => {
+export const createDrink = async (drinkData: { categoria: 'alc' | 'non-alc'; nome_bebida: string; emoji: string; created_by: number }) => {
   const response = await api.post<{ success: boolean; data: Drink }>('/drinks', drinkData);
   return response.data.data;
 };
 
-export const voteDrink = async (drinkId: number) => {
-  const response = await api.post<{ success: boolean; data: Drink }>('/drinks/vote', { drink_id: drinkId });
-  return response.data.data;
+export const joinDrink = async (drinkId: number, userId: number) => {
+  const response = await api.post<{ success: boolean; message: string }>(`/drinks/${drinkId}/join`, { user_id: userId });
+  return response.data;
+};
+
+export const leaveDrink = async (drinkId: number, userId: number) => {
+  const response = await api.delete<{ success: boolean; message: string }>(`/drinks/${drinkId}/leave`, { data: { user_id: userId } });
+  return response.data;
+};
+
+export const deleteDrink = async (drinkId: number) => {
+  const response = await api.delete<{ success: boolean; message: string }>(`/drinks/${drinkId}`);
+  return response.data;
 };
 
 // API Calls - Checklist
@@ -263,6 +276,43 @@ export const voteExperience = async (experienceId: number) => {
     experience_id: experienceId,
   });
   return response.data.data;
+};
+
+// API Calls - Party Themes
+export const getPartyThemes = async () => {
+  const response = await api.get<{ success: boolean; data: any[] }>('/party-themes');
+  return response.data.data;
+};
+
+export const getUserPartyThemeVotes = async () => {
+  const response = await api.get<{ success: boolean; data: any[] }>('/party-themes/my-votes');
+  return response.data.data;
+};
+
+export const createPartyTheme = async (themeData: {
+  nome: string;
+  descricao: string;
+  cor_card: string;
+}) => {
+  const response = await api.post<{ success: boolean; data: any }>('/party-themes', themeData);
+  return response.data.data;
+};
+
+export const votePartyTheme = async (themeId: number, voteType: 'positive' | 'negative') => {
+  const response = await api.post<{ success: boolean; data: any }>(`/party-themes/${themeId}/vote`, {
+    vote_type: voteType
+  });
+  return response.data.data;
+};
+
+export const removeVotePartyTheme = async (themeId: number) => {
+  const response = await api.delete<{ success: boolean; data: any }>(`/party-themes/${themeId}/vote`);
+  return response.data.data;
+};
+
+export const deletePartyTheme = async (themeId: number) => {
+  const response = await api.delete<{ success: boolean }>(`/party-themes/${themeId}`);
+  return response.data;
 };
 
 export default api;

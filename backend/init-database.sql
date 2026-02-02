@@ -43,15 +43,25 @@ CREATE TABLE meals (
     UNIQUE(data, tipo_refeicao)
 );
 
--- Tabela de Votação de Bebidas
+-- Tabela de Bebidas (Sistema de Racha)
 CREATE TABLE drinks_poll (
     id SERIAL PRIMARY KEY,
     categoria VARCHAR(50) NOT NULL CHECK (categoria IN ('alc', 'non-alc')),
     nome_bebida VARCHAR(255) NOT NULL,
-    votos INTEGER DEFAULT 0 CHECK (votos >= 0),
+    emoji VARCHAR(10) NOT NULL,
+    created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(categoria, nome_bebida)
+);
+
+-- Tabela de Participantes no Racha de Bebidas
+CREATE TABLE user_drink_participants (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    drink_id INTEGER NOT NULL REFERENCES drinks_poll(id) ON DELETE CASCADE,
+    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, drink_id)
 );
 
 -- Tabela de Checklist
@@ -76,7 +86,7 @@ CREATE TABLE user_checklist_checked (
     UNIQUE(user_id, checklist_id)
 );
 
--- Tabela de Experiências
+-- Tabela de Experiências (Frases)
 CREATE TABLE experience (
     id SERIAL PRIMARY KEY,
     tipo VARCHAR(50) NOT NULL CHECK (tipo IN ('frase', 'tema_festa')),
@@ -85,6 +95,27 @@ CREATE TABLE experience (
     votos INTEGER DEFAULT 0 CHECK (votos >= 0),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabela de Temas de Festa
+CREATE TABLE party_themes (
+    id SERIAL PRIMARY KEY,
+    nome VARCHAR(255) NOT NULL,
+    descricao TEXT,
+    cor_card VARCHAR(20) NOT NULL DEFAULT '#8b5cf6',
+    autor_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabela de Votos em Temas de Festa
+CREATE TABLE party_theme_votes (
+    id SERIAL PRIMARY KEY,
+    theme_id INTEGER NOT NULL REFERENCES party_themes(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    vote_type VARCHAR(20) NOT NULL CHECK (vote_type IN ('positive', 'negative')),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(theme_id, user_id)
 );
 
 -- Tabela de Lista de Mercado
@@ -209,6 +240,9 @@ CREATE INDEX idx_meals_cook ON meals(cook_id);
 
 -- Drinks
 CREATE INDEX idx_drinks_categoria ON drinks_poll(categoria);
+CREATE INDEX idx_drinks_created_by ON drinks_poll(created_by);
+CREATE INDEX idx_user_drink_participants_user ON user_drink_participants(user_id);
+CREATE INDEX idx_user_drink_participants_drink ON user_drink_participants(drink_id);
 
 -- Checklist
 CREATE INDEX idx_checklist_categoria ON checklist(categoria);
@@ -219,6 +253,11 @@ CREATE INDEX idx_user_checklist_checked_checklist ON user_checklist_checked(chec
 -- Experience
 CREATE INDEX idx_experience_tipo ON experience(tipo);
 CREATE INDEX idx_experience_autor ON experience(autor_id);
+
+-- Party Themes
+CREATE INDEX idx_party_themes_autor ON party_themes(autor_id);
+CREATE INDEX idx_party_theme_votes_theme ON party_theme_votes(theme_id);
+CREATE INDEX idx_party_theme_votes_user ON party_theme_votes(user_id);
 
 -- Market Items
 CREATE INDEX idx_market_items_categoria ON market_items(categoria);
@@ -275,6 +314,9 @@ CREATE TRIGGER update_checklist_updated_at BEFORE UPDATE ON checklist
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_experience_updated_at BEFORE UPDATE ON experience
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_party_themes_updated_at BEFORE UPDATE ON party_themes
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_market_items_updated_at BEFORE UPDATE ON market_items
@@ -357,10 +399,13 @@ COMMENT ON COLUMN users.role IS 'Papel do usuário: admin (gerencia tudo) ou mem
 COMMENT ON COLUMN users.senha IS 'Hash bcrypt da senha do usuário';
 
 COMMENT ON TABLE meals IS 'Refeições planejadas com responsáveis';
-COMMENT ON TABLE drinks_poll IS 'Votação de bebidas para a viagem';
+COMMENT ON TABLE drinks_poll IS 'Bebidas com sistema de racha compartilhado';
+COMMENT ON TABLE user_drink_participants IS 'Participantes que entraram no racha de cada bebida';
 COMMENT ON TABLE checklist IS 'Lista de tarefas e itens para não esquecer';
 COMMENT ON TABLE user_checklist_checked IS 'Sistema de riscar individual: cada usuário pode riscar itens essenciais';
-COMMENT ON TABLE experience IS 'Frases e temas de festa sugeridos pelos usuários';
+COMMENT ON TABLE experience IS 'Frases e pérolas dos usuários';
+COMMENT ON TABLE party_themes IS 'Temas de festa sugeridos com votação';
+COMMENT ON TABLE party_theme_votes IS 'Votos positivos/negativos nos temas de festa';
 COMMENT ON TABLE market_items IS 'Lista de compras do mercado';
 COMMENT ON TABLE meal_ingredients IS 'Relacionamento entre refeições e ingredientes';
 COMMENT ON TABLE expense_categories IS 'Categorias de despesas customizáveis';
@@ -386,16 +431,7 @@ VALUES (
 -- NOTA: Não criamos usuários extras aqui.
 -- O admin Will poderá criar novos membros através do painel de administração.
 
--- Bebidas para votação
-INSERT INTO drinks_poll (categoria, nome_bebida) VALUES
-('alc', 'Cerveja'),
-('alc', 'Vinho'),
-('alc', 'Caipirinha'),
-('alc', 'Shots'),
-('non-alc', 'Suco'),
-('non-alc', 'Refri Zero'),
-('non-alc', 'Refri Normal'),
-('non-alc', 'Agua com Gas');
+-- Nenhuma bebida inicial - usuários criarão suas próprias bebidas com racha
 
 -- Categorias de despesas padrão
 INSERT INTO expense_categories (nome, icone, cor, is_system) VALUES

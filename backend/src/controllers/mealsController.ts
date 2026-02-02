@@ -114,7 +114,7 @@ export const createMeal = async (req: Request, res: Response) => {
 export const updateMeal = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { nome_refeicao, ingredientes, cook_id, helper_id, dishwasher1_id, dishwasher2_id } = req.body;
+    const { nome_refeicao, ingredientes, cook_id, helper_id, dishwasher1_id, dishwasher2_id, data, tipo_refeicao } = req.body;
     
     const result = await pool.query(
       `UPDATE meals 
@@ -124,10 +124,12 @@ export const updateMeal = async (req: Request, res: Response) => {
            helper_id = COALESCE($4, helper_id),
            dishwasher1_id = COALESCE($5, dishwasher1_id),
            dishwasher2_id = COALESCE($6, dishwasher2_id),
+           data = COALESCE($7, data),
+           tipo_refeicao = COALESCE($8, tipo_refeicao),
            updated_at = CURRENT_TIMESTAMP
-       WHERE id = $7
+       WHERE id = $9
        RETURNING *`,
-      [nome_refeicao, ingredientes, cook_id, helper_id, dishwasher1_id, dishwasher2_id, id]
+      [nome_refeicao, ingredientes, cook_id, helper_id, dishwasher1_id, dishwasher2_id, data, tipo_refeicao, id]
     );
     
     if (result.rows.length === 0) {
@@ -138,6 +140,44 @@ export const updateMeal = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Erro ao atualizar refeição:', error);
     res.status(500).json({ success: false, error: 'Erro ao atualizar refeição' });
+  }
+};
+
+export const deleteMeal = async (req: Request, res: Response) => {
+  const client = await pool.connect();
+  
+  try {
+    const { id } = req.params;
+    
+    await client.query('BEGIN');
+    
+    // Deletar primeiro os ingredientes relacionados
+    await client.query('DELETE FROM meal_ingredients WHERE meal_id = $1', [id]);
+    
+    // Deletar a refeição
+    const result = await client.query(
+      'DELETE FROM meals WHERE id = $1 RETURNING *',
+      [id]
+    );
+    
+    if (result.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ success: false, error: 'Refeição não encontrada' });
+    }
+    
+    await client.query('COMMIT');
+    
+    res.json({ 
+      success: true, 
+      message: 'Refeição deletada com sucesso',
+      data: result.rows[0]
+    });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Erro ao deletar refeição:', error);
+    res.status(500).json({ success: false, error: 'Erro ao deletar refeição' });
+  } finally {
+    client.release();
   }
 };
 
