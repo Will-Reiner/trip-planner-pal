@@ -1,5 +1,23 @@
 import { Request, Response } from 'express';
+import type { PoolClient } from 'pg';
 import pool from '../config/database';
+
+const getOrCreateGasolinaCategoryId = async (client: PoolClient) => {
+  const existing = await client.query(
+    "SELECT id FROM expense_categories WHERE nome = 'Gasolina' LIMIT 1"
+  );
+
+  if (existing.rows.length > 0) {
+    return existing.rows[0].id as number;
+  }
+
+  const created = await client.query(
+    'INSERT INTO expense_categories (nome, icone, cor, is_system) VALUES ($1, $2, $3, true) RETURNING id',
+    ['Gasolina', null, '#ef4444']
+  );
+
+  return created.rows[0].id as number;
+};
 
 // ============= RIDES =============
 
@@ -65,18 +83,13 @@ export const createRide = async (req: Request, res: Response) => {
     
     // Se tem valor de gasolina, criar despesa automática
     if (valor_gasolina && valor_gasolina > 0) {
-      const categoryResult = await client.query(
-        "SELECT id FROM expense_categories WHERE nome = 'Gasolina' LIMIT 1"
+      const gasolinaCategoryId = await getOrCreateGasolinaCategoryId(client);
+      const expenseResult = await client.query(
+        `INSERT INTO expenses (category_id, descricao, valor_total, pagador_id)
+         VALUES ($1, $2, $3, $4) RETURNING id`,
+        [gasolinaCategoryId, `Gasolina - ${titulo}`, valor_gasolina, motorista_id]
       );
-      
-      if (categoryResult.rows.length > 0) {
-        const expenseResult = await client.query(
-          `INSERT INTO expenses (category_id, descricao, valor_total, pagador_id)
-           VALUES ($1, $2, $3, $4) RETURNING id`,
-          [categoryResult.rows[0].id, `Gasolina - ${titulo}`, valor_gasolina, motorista_id]
-        );
-        expense_id = expenseResult.rows[0].id;
-      }
+      expense_id = expenseResult.rows[0].id;
     }
     
     const rideResult = await client.query(
@@ -148,26 +161,21 @@ export const updateRide = async (req: Request, res: Response) => {
     
     // Gerenciar despesa de gasolina
     if (valor_gasolina && valor_gasolina > 0) {
-      const categoryResult = await client.query(
-        "SELECT id FROM expense_categories WHERE nome = 'Gasolina' LIMIT 1"
-      );
-      
-      if (categoryResult.rows.length > 0) {
-        if (expense_id) {
-          // Atualizar despesa existente
-          await client.query(
-            'UPDATE expenses SET descricao = $1, valor_total = $2 WHERE id = $3',
-            [`Gasolina - ${titulo || ride.titulo}`, valor_gasolina, expense_id]
-          );
-        } else {
-          // Criar nova despesa
-          const expenseResult = await client.query(
-            `INSERT INTO expenses (category_id, descricao, valor_total, pagador_id)
-             VALUES ($1, $2, $3, $4) RETURNING id`,
-            [categoryResult.rows[0].id, `Gasolina - ${titulo || ride.titulo}`, valor_gasolina, ride.motorista_id]
-          );
-          expense_id = expenseResult.rows[0].id;
-        }
+      const gasolinaCategoryId = await getOrCreateGasolinaCategoryId(client);
+      if (expense_id) {
+        // Atualizar despesa existente
+        await client.query(
+          'UPDATE expenses SET descricao = $1, valor_total = $2 WHERE id = $3',
+          [`Gasolina - ${titulo || ride.titulo}`, valor_gasolina, expense_id]
+        );
+      } else {
+        // Criar nova despesa
+        const expenseResult = await client.query(
+          `INSERT INTO expenses (category_id, descricao, valor_total, pagador_id)
+           VALUES ($1, $2, $3, $4) RETURNING id`,
+          [gasolinaCategoryId, `Gasolina - ${titulo || ride.titulo}`, valor_gasolina, ride.motorista_id]
+        );
+        expense_id = expenseResult.rows[0].id;
       }
     } else if (expense_id && valor_gasolina === null) {
       // Se removeu o valor de gasolina, deletar despesa

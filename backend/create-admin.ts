@@ -1,9 +1,22 @@
 import bcrypt from 'bcrypt';
 import { Client } from 'pg';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const createAdmin = async () => {
+  const dbHost = process.env.DB_HOST ?? 'localhost';
+  const dbPort = process.env.DB_PORT ?? '5433';
+  const dbUser = process.env.DB_USER ?? 'postgres';
+  const dbPassword = process.env.DB_PASSWORD ?? 'postgres';
+  const dbName = process.env.DB_NAME ?? 'trip_planner';
+
+  const connectionString =
+    process.env.DATABASE_URL ??
+    `postgresql://${dbUser}:${dbPassword}@${dbHost}:${dbPort}/${dbName}`;
+
   const client = new Client({
-    connectionString: process.env.DATABASE_URL,
+    connectionString,
   });
 
   try {

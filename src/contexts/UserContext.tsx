@@ -14,12 +14,26 @@ interface UserContextType {
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 const STORAGE_KEY = 'trip_planner_current_user';
+const LEGACY_STORAGE_KEY = 'trip_planner_user';
 
 export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
-    // Recupera o usuário do localStorage ao inicializar
     const stored = localStorage.getItem(STORAGE_KEY);
-    return stored ? JSON.parse(stored) : null;
+    if (stored) {
+      return JSON.parse(stored);
+    }
+
+    const legacyStored = localStorage.getItem(LEGACY_STORAGE_KEY);
+    if (legacyStored) {
+      const parsed = JSON.parse(legacyStored);
+      return {
+        id: parsed.id,
+        name: parsed.nome ?? parsed.name,
+        photo: parsed.avatar_url ?? parsed.photo ?? null,
+      } as User;
+    }
+
+    return null;
   });
 
   // Salva no localStorage sempre que o usuário mudar

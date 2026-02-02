@@ -11,11 +11,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
 
 const Itens = () => {
-  const { data, addCommunityItem, assignCommunityItem, addTask, assignTask, addEssential, toggleEssential, deleteEssential } = useTripData();
+  const { data, addCommunityItem, assignCommunityItem, addTask, assignTask, deleteCommunityItem, deleteTask, addEssential, toggleEssential, deleteEssential } = useTripData();
   const { currentUser } = useUser();
   const [newItem, setNewItem] = useState('');
   const [newTask, setNewTask] = useState('');
   const [newEssential, setNewEssential] = useState('');
+
+  const storedUser = localStorage.getItem('trip_planner_user');
+  const isAdmin = storedUser ? JSON.parse(storedUser)?.role === 'admin' : false;
 
   const getParticipantName = (id: number | null) => {
     if (!id) return null;
@@ -91,11 +94,14 @@ const Itens = () => {
             </div>
             <div className="space-y-2">
               {data.communityItems.map(item => (
+                (() => {
+                  const canDelete = isAdmin;
+                  return (
                 <div
                   key={item.id}
                   className="flex items-center justify-between p-4 bg-card rounded-2xl border border-border"
                 >
-                  <span className="font-medium text-foreground">{item.name}</span>
+                  <span className="font-medium text-foreground flex-1">{item.name}</span>
                   {item.assignee ? (
                     <div className="flex items-center gap-2">
                       <Badge 
@@ -117,15 +123,39 @@ const Itens = () => {
                       )}
                     </div>
                   ) : (
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => currentUser && assignCommunityItem(item.id, currentUser.id)}
+                      >
+                        Assumir 🙋
+                      </Button>
+                      {canDelete && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => deleteCommunityItem(item.id)}
+                          className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                  {item.assignee && canDelete && (
                     <Button
                       size="sm"
-                      variant="outline"
-                      onClick={() => currentUser && assignCommunityItem(item.id, currentUser.id)}
+                      variant="ghost"
+                      onClick={() => deleteCommunityItem(item.id)}
+                      className="h-6 w-6 p-0 text-destructive hover:text-destructive"
                     >
-                      Assumir 🙋
+                      <Trash2 className="w-3 h-3" />
                     </Button>
                   )}
                 </div>
+                  );
+                })()
               ))}
             </div>
           </TabsContent>
@@ -146,11 +176,14 @@ const Itens = () => {
             </div>
             <div className="space-y-2">
               {data.tasks.map(task => (
+                (() => {
+                  const canDelete = isAdmin;
+                  return (
                 <div
                   key={task.id}
                   className="flex items-center justify-between p-4 bg-card rounded-2xl border border-border"
                 >
-                  <span className="font-medium text-foreground">{task.name}</span>
+                  <span className="font-medium text-foreground flex-1">{task.name}</span>
                   {task.assignee ? (
                     <div className="flex items-center gap-2">
                       <Badge 
@@ -172,15 +205,39 @@ const Itens = () => {
                       )}
                     </div>
                   ) : (
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => currentUser && assignTask(task.id, currentUser.id)}
+                      >
+                        Assumir 🙋
+                      </Button>
+                      {canDelete && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => deleteTask(task.id)}
+                          className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                  {task.assignee && canDelete && (
                     <Button
                       size="sm"
-                      variant="outline"
-                      onClick={() => currentUser && assignTask(task.id, currentUser.id)}
+                      variant="ghost"
+                      onClick={() => deleteTask(task.id)}
+                      className="h-6 w-6 p-0 text-destructive hover:text-destructive"
                     >
-                      Assumir 🙋
+                      <Trash2 className="w-3 h-3" />
                     </Button>
                   )}
                 </div>
+                  );
+                })()
               ))}
             </div>
           </TabsContent>
@@ -202,16 +259,7 @@ const Itens = () => {
             <div className="space-y-2">
               {data.essentials.map(essential => {
                 const isCheckedByUser = essential.is_checked_by_user || false;
-                const canDelete = essential.created_by_id === currentUser?.id;
-                
-                console.log(`Essential ${essential.id}:`, {
-                  is_checked_by_user: essential.is_checked_by_user,
-                  isCheckedByUser,
-                  created_by_id: essential.created_by_id,
-                  currentUserId: currentUser?.id,
-                  canDelete
-                });
-                
+                const canDelete = isAdmin || essential.created_by_id === currentUser?.id;
                 return (
                   <div
                     key={essential.id}

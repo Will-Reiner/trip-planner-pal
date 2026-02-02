@@ -10,6 +10,8 @@ interface TokenPayload {
   role: string;
 }
 
+type AuthenticatedRequest = Request & { user?: TokenPayload };
+
 // Middleware para verificar JWT
 export const authenticateToken = (req: Request, res: Response, next: NextFunction) => {
   const authHeader = req.headers['authorization'];
@@ -20,18 +22,18 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
   }
 
   jwt.verify(token, JWT_SECRET, (err, decoded) => {
-    if (err) {
+    if (err || !decoded || typeof decoded !== 'object') {
       return res.status(403).json({ success: false, error: 'Token inválido' });
     }
-    
-    (req as any).user = decoded as TokenPayload;
+
+    (req as AuthenticatedRequest).user = decoded as TokenPayload;
     next();
   });
 };
 
 // Middleware para verificar se é admin
 export const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
-  const user = (req as any).user as TokenPayload;
+  const user = (req as AuthenticatedRequest).user;
   
   if (!user || user.role !== 'admin') {
     return res.status(403).json({ 
@@ -162,7 +164,11 @@ export const createUser = async (req: Request, res: Response) => {
 // Verificar token (para manter sessão)
 export const verifyToken = async (req: Request, res: Response) => {
   try {
-    const user = (req as any).user as TokenPayload;
+    const user = (req as AuthenticatedRequest).user;
+
+    if (!user) {
+      return res.status(401).json({ success: false, error: 'Token não fornecido' });
+    }
 
     // Buscar dados atualizados do usuário
     const result = await pool.query(

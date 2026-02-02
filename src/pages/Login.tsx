@@ -59,11 +59,14 @@ const Login = () => {
       // Redirecionar para página principal
       navigate('/gastronomia');
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erro no login:', error);
+      const apiMessage = axios.isAxiosError(error)
+        ? error.response?.data?.error || error.response?.data?.message
+        : undefined;
       toast({
         title: 'Erro no login',
-        description: error.response?.data?.error || 'Verifique suas credenciais',
+        description: apiMessage || 'Verifique suas credenciais',
         variant: 'destructive',
       });
     } finally {

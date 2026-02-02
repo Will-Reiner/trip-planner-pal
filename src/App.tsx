@@ -19,27 +19,31 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const { currentUser } = useUser();
   const token = localStorage.getItem('trip_planner_token');
-  
-  if (!token) {
+  const isAuthed = Boolean(token && currentUser);
+
+  if (!isAuthed) {
     return <Navigate to="/login" replace />;
   }
-  
+
   return <>{children}</>;
 };
 
 const AppRoutes = () => {
+  const { currentUser } = useUser();
   const token = localStorage.getItem('trip_planner_token');
+  const isAuthed = Boolean(token && currentUser);
   
   return (
     <Routes>
       <Route 
         path="/login" 
-        element={token ? <Navigate to="/gastronomia" replace /> : <Login />} 
+        element={isAuthed ? <Navigate to="/gastronomia" replace /> : <Login />} 
       />
       <Route 
         path="/" 
-        element={<Navigate to={token ? "/gastronomia" : "/login"} replace />} 
+        element={<Navigate to={isAuthed ? "/gastronomia" : "/login"} replace />} 
       />
       <Route 
         path="/admin-usuarios" 

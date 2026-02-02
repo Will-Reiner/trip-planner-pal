@@ -95,7 +95,7 @@ export const updateMarketItem = async (req: Request, res: Response) => {
     
     // Usar um objeto para construir a query dinamicamente
     const updates: string[] = [];
-    const values: any[] = [];
+    const values: Array<string | number | boolean | null> = [];
     let paramIndex = 1;
 
     if (nome !== undefined) {
