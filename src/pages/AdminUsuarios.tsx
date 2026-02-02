@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { Shield, UserPlus, Users, Crown, Edit, Trash2 } from 'lucide-react';
 
-const API_URL = 'http://localhost:3001/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
 interface User {
   id: number;
@@ -113,11 +113,14 @@ export default function AdminUsuarios() {
       
       // Recarregar dados globais para atualizar painel de participantes
       await reloadData();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erro ao criar usuário:', error);
+      const apiMessage = axios.isAxiosError(error)
+        ? error.response?.data?.message || error.response?.data?.error
+        : undefined;
       toast({
         title: 'Erro',
-        description: error.response?.data?.message || 'Não foi possível criar o usuário',
+        description: apiMessage || 'Não foi possível criar o usuário',
         variant: 'destructive',
       });
     }

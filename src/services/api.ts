@@ -221,6 +221,7 @@ export const createChecklistItem = async (itemData: {
   categoria: 'item' | 'tarefa' | 'nao_esqueca';
   descricao: string;
   owner_id?: number;
+  created_by_id?: number;
 }) => {
   const response = await api.post<{ success: boolean; data: ChecklistItem }>('/checklist', itemData);
   return response.data.data;

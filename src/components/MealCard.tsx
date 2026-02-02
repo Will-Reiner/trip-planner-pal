@@ -375,8 +375,9 @@ const MealCard: React.FC<MealCardProps> = ({ meal }) => {
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
       <div className="bg-card rounded-2xl border border-border overflow-hidden transition-all duration-200 hover:shadow-md">
-        <CollapsibleTrigger className="w-full p-4 flex items-center justify-between">
-          <div className="flex items-center gap-3 flex-1">
+        <CollapsibleTrigger asChild>
+          <div className="w-full p-4 flex items-center justify-between cursor-pointer" role="button" tabIndex={0}>
+            <div className="flex items-center gap-3 flex-1">
             <span className="text-2xl">{getMealEmoji(meal.type)}</span>
             <div className="text-left flex-1">
               <h3 className="font-semibold text-foreground">{getMealLabel(meal.type)}</h3>
@@ -452,6 +453,7 @@ const MealCard: React.FC<MealCardProps> = ({ meal }) => {
             ) : (
               <ChevronDown className="w-5 h-5 text-muted-foreground" />
             )}
+          </div>
           </div>
         </CollapsibleTrigger>
 

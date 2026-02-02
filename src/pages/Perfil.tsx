@@ -24,7 +24,6 @@ const Perfil = () => {
     setCurrentUser(null);
     localStorage.removeItem('trip_planner_token');
     localStorage.removeItem('trip_planner_user');
-    navigate('/login');
   };
 
   const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {

@@ -2,12 +2,15 @@ import { useState, useEffect } from 'react';
 import { useUser } from '../contexts/UserContext';
 import { useTripData } from '../contexts/TripDataContext';
 import BottomNav from '../components/BottomNav';
-import { Car, Users, Plus, MapPin, DollarSign, Trash2, UserPlus, Edit } from 'lucide-react';
+import { Car, Users, Plus, MapPin, DollarSign, Trash2, UserPlus, Edit, Check, ChevronDown, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import {
   Dialog,
   DialogContent,
@@ -21,6 +24,44 @@ import { useToast } from '@/hooks/use-toast';
 import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+
+const BRASILIA_REGIOES = [
+  'Águas Claras',
+  'Arniqueira',
+  'Asa Norte',
+  'Asa Sul',
+  'Brazlândia',
+  'Candangolândia',
+  'Ceilândia',
+  'Cruzeiro',
+  'Fercal',
+  'Gama',
+  'Guará',
+  'Itapoã',
+  'Jardim Botânico',
+  'Lago Norte',
+  'Lago Sul',
+  'Núcleo Bandeirante',
+  'Paranoá',
+  'Park Way',
+  'Planaltina',
+  'Plano Piloto',
+  'Recanto das Emas',
+  'Riacho Fundo I',
+  'Riacho Fundo II',
+  'Samambaia',
+  'Santa Maria',
+  'São Sebastião',
+  'SCIA / Estrutural',
+  'SIA',
+  'Sobradinho',
+  'Sobradinho II',
+  'Sol Nascente / Pôr do Sol',
+  'Sudoeste / Octogonal',
+  'Taguatinga',
+  'Varjão',
+  'Vicente Pires',
+];
 
 interface Ride {
   id: number;
@@ -51,10 +92,9 @@ const Caronas = () => {
   const [editingRide, setEditingRide] = useState<Ride | null>(null);
   const [rideForm, setRideForm] = useState({
     titulo: '',
-    origem: '',
-    destino: '',
+    origem: [] as string[],
+    destino: 'Pirinópolis',
     valor_gasolina: '',
-    distancia_km: '',
     data_viagem: '',
     passageiros: [] as Array<{ user_id: number; contribuicao: string }>,
   });
@@ -104,10 +144,9 @@ const Caronas = () => {
       await axios.post(`${API_URL}/rides`, {
         titulo: rideForm.titulo,
         motorista_id: currentUser.id,
-        origem: rideForm.origem || null,
-        destino: rideForm.destino || null,
+        origem: rideForm.origem.length > 0 ? rideForm.origem.join(', ') : null,
+        destino: 'Pirinópolis',
         valor_gasolina: rideForm.valor_gasolina ? parseFloat(rideForm.valor_gasolina) : null,
-        distancia_km: rideForm.distancia_km ? parseFloat(rideForm.distancia_km) : null,
         data_viagem: rideForm.data_viagem || null,
         passageiros: rideForm.passageiros.map(p => ({
           user_id: p.user_id,
@@ -119,10 +158,9 @@ const Caronas = () => {
       setIsDialogOpen(false);
       setRideForm({
         titulo: '',
-        origem: '',
-        destino: '',
+        origem: [],
+        destino: 'Pirinópolis',
         valor_gasolina: '',
-        distancia_km: '',
         data_viagem: '',
         passageiros: [],
       });
@@ -161,11 +199,14 @@ const Caronas = () => {
       });
       toast({ title: 'Você entrou na carona!' });
       loadRides();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erro ao entrar na carona:', error);
+      const apiMessage = axios.isAxiosError(error)
+        ? error.response?.data?.error || error.response?.data?.message
+        : undefined;
       toast({
         title: 'Erro',
-        description: error.response?.data?.error || 'Não foi possível entrar na carona',
+        description: apiMessage || 'Não foi possível entrar na carona',
         variant: 'destructive',
       });
     }
@@ -194,10 +235,9 @@ const Caronas = () => {
     setEditingRide(ride);
     setRideForm({
       titulo: ride.titulo,
-      origem: ride.origem || '',
-      destino: ride.destino || '',
+      origem: ride.origem ? ride.origem.split(',').map(region => region.trim()).filter(Boolean) : [],
+      destino: 'Pirinópolis',
       valor_gasolina: ride.valor_gasolina?.toString() || '',
-      distancia_km: ride.distancia_km?.toString() || '',
       data_viagem: ride.data_viagem ? ride.data_viagem.slice(0, 16) : '',
       passageiros: ride.passageiros.map(p => ({
         user_id: p.user_id,
@@ -220,10 +260,9 @@ const Caronas = () => {
     try {
       await axios.patch(`${API_URL}/rides/${editingRide.id}`, {
         titulo: rideForm.titulo,
-        origem: rideForm.origem || null,
-        destino: rideForm.destino || null,
+        origem: rideForm.origem.length > 0 ? rideForm.origem.join(', ') : null,
+        destino: 'Pirinópolis',
         valor_gasolina: rideForm.valor_gasolina ? parseFloat(rideForm.valor_gasolina) : null,
-        distancia_km: rideForm.distancia_km ? parseFloat(rideForm.distancia_km) : null,
         data_viagem: rideForm.data_viagem || null,
         passageiros: rideForm.passageiros.map(p => ({
           user_id: p.user_id,
@@ -236,10 +275,9 @@ const Caronas = () => {
       setEditingRide(null);
       setRideForm({
         titulo: '',
-        origem: '',
-        destino: '',
+        origem: [],
+        destino: 'Pirinópolis',
         valor_gasolina: '',
-        distancia_km: '',
         data_viagem: '',
         passageiros: [],
       });
@@ -278,6 +316,23 @@ const Caronas = () => {
         };
       }
     });
+  };
+
+  const toggleOrigemRegion = (region: string) => {
+    setRideForm(prev => {
+      const exists = prev.origem.includes(region);
+      return {
+        ...prev,
+        origem: exists ? prev.origem.filter(r => r !== region) : [...prev.origem, region],
+      };
+    });
+  };
+
+  const removeOrigemRegion = (region: string) => {
+    setRideForm(prev => ({
+      ...prev,
+      origem: prev.origem.filter(r => r !== region),
+    }));
   };
 
   const availablePassengers = data.participants.filter(p => p.id !== currentUser?.id);
@@ -326,32 +381,81 @@ const Caronas = () => {
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div>
-                <Label>Título *</Label>
+                <Label>Título da carona *</Label>
                 <Input
                   value={rideForm.titulo}
                   onChange={(e) => setRideForm({ ...rideForm, titulo: e.target.value })}
-                  placeholder="Ex: Ida para a praia"
+                  placeholder="Ex: Ida para o rolê"
                 />
               </div>
               <div>
-                <Label>Origem</Label>
-                <Input
-                  value={rideForm.origem}
-                  onChange={(e) => setRideForm({ ...rideForm, origem: e.target.value })}
-                  placeholder="Ex: São Paulo"
-                />
+                <Label>Região de origem</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      className="w-full justify-between"
+                    >
+                      {rideForm.origem.length > 0
+                        ? `${rideForm.origem.length} região(ões) selecionada(s)`
+                        : 'Selecione a(s) região(ões)'}
+                      <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="p-0 max-h-[70vh] overflow-hidden">
+                    <Command className="max-h-[70vh]">
+                      <CommandInput placeholder="Buscar região..." />
+                      <ScrollArea className="h-[52vh]">
+                        <CommandList className="max-h-none">
+                          <CommandEmpty>Nenhuma região encontrada.</CommandEmpty>
+                          <CommandGroup>
+                            {BRASILIA_REGIOES.map(region => (
+                              <CommandItem
+                                key={region}
+                                onSelect={() => toggleOrigemRegion(region)}
+                              >
+                                <span className="mr-2 flex h-4 w-4 items-center justify-center">
+                                  {rideForm.origem.includes(region) && <Check className="h-4 w-4" />}
+                                </span>
+                                <span>{region}</span>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </ScrollArea>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+                {rideForm.origem.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {rideForm.origem.map(region => (
+                      <Badge key={region} variant="secondary" className="gap-1">
+                        {region}
+                        <button
+                          type="button"
+                          onClick={() => removeOrigemRegion(region)}
+                          className="rounded-full hover:text-foreground"
+                          aria-label={`Remover ${region}`}
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                )}
               </div>
               <div>
-                <Label>Destino</Label>
+                <Label>Destino (bairro/cidade)</Label>
                 <Input
                   value={rideForm.destino}
-                  onChange={(e) => setRideForm({ ...rideForm, destino: e.target.value })}
-                  placeholder="Ex: Praia Grande"
+                  onChange={() => undefined}
+                  disabled
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div>
                 <div>
-                  <Label>Gasolina (R$)</Label>
+                  <Label>Estimativa de gasolina (R$)</Label>
                   <Input
                     type="number"
                     step="0.01"
@@ -359,18 +463,9 @@ const Caronas = () => {
                     onChange={(e) => setRideForm({ ...rideForm, valor_gasolina: e.target.value })}
                   />
                 </div>
-                <div>
-                  <Label>Distância (km)</Label>
-                  <Input
-                    type="number"
-                    step="0.1"
-                    value={rideForm.distancia_km}
-                    onChange={(e) => setRideForm({ ...rideForm, distancia_km: e.target.value })}
-                  />
-                </div>
               </div>
               <div>
-                <Label>Data da Viagem</Label>
+                <Label>Data e hora da saída</Label>
                 <Input
                   type="datetime-local"
                   value={rideForm.data_viagem}
@@ -413,32 +508,81 @@ const Caronas = () => {
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div>
-                <Label>Título *</Label>
+                <Label>Título da carona *</Label>
                 <Input
                   value={rideForm.titulo}
                   onChange={(e) => setRideForm({ ...rideForm, titulo: e.target.value })}
-                  placeholder="Ex: Ida para a praia"
+                  placeholder="Ex: Ida para o rolê"
                 />
               </div>
               <div>
-                <Label>Origem</Label>
-                <Input
-                  value={rideForm.origem}
-                  onChange={(e) => setRideForm({ ...rideForm, origem: e.target.value })}
-                  placeholder="Ex: São Paulo"
-                />
+                <Label>Região de origem</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      className="w-full justify-between"
+                    >
+                      {rideForm.origem.length > 0
+                        ? `${rideForm.origem.length} região(ões) selecionada(s)`
+                        : 'Selecione a(s) região(ões)'}
+                      <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="p-0 max-h-[70vh] overflow-hidden">
+                    <Command className="max-h-[70vh]">
+                      <CommandInput placeholder="Buscar região..." />
+                      <ScrollArea className="h-[52vh]">
+                        <CommandList className="max-h-none">
+                          <CommandEmpty>Nenhuma região encontrada.</CommandEmpty>
+                          <CommandGroup>
+                            {BRASILIA_REGIOES.map(region => (
+                              <CommandItem
+                                key={region}
+                                onSelect={() => toggleOrigemRegion(region)}
+                              >
+                                <span className="mr-2 flex h-4 w-4 items-center justify-center">
+                                  {rideForm.origem.includes(region) && <Check className="h-4 w-4" />}
+                                </span>
+                                <span>{region}</span>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </ScrollArea>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+                {rideForm.origem.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {rideForm.origem.map(region => (
+                      <Badge key={region} variant="secondary" className="gap-1">
+                        {region}
+                        <button
+                          type="button"
+                          onClick={() => removeOrigemRegion(region)}
+                          className="rounded-full hover:text-foreground"
+                          aria-label={`Remover ${region}`}
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                )}
               </div>
               <div>
-                <Label>Destino</Label>
+                <Label>Destino (bairro/cidade)</Label>
                 <Input
                   value={rideForm.destino}
-                  onChange={(e) => setRideForm({ ...rideForm, destino: e.target.value })}
-                  placeholder="Ex: Praia Grande"
+                  onChange={() => undefined}
+                  disabled
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div>
                 <div>
-                  <Label>Gasolina (R$)</Label>
+                  <Label>Estimativa de gasolina (R$)</Label>
                   <Input
                     type="number"
                     step="0.01"
@@ -446,18 +590,9 @@ const Caronas = () => {
                     onChange={(e) => setRideForm({ ...rideForm, valor_gasolina: e.target.value })}
                   />
                 </div>
-                <div>
-                  <Label>Distância (km)</Label>
-                  <Input
-                    type="number"
-                    step="0.1"
-                    value={rideForm.distancia_km}
-                    onChange={(e) => setRideForm({ ...rideForm, distancia_km: e.target.value })}
-                  />
-                </div>
               </div>
               <div>
-                <Label>Data da Viagem</Label>
+                <Label>Data e hora da saída</Label>
                 <Input
                   type="datetime-local"
                   value={rideForm.data_viagem}
@@ -500,8 +635,9 @@ const Caronas = () => {
         ) : (
           rides.map(ride => {
             const isDriver = ride.motorista_id === currentUser?.id;
-            const isPassenger = ride.passageiros.some(p => p.user_id === currentUser?.id);
-            const availableSeats = 4 - ride.passageiros.length;
+            const passageiros = ride.passageiros || [];
+            const isPassenger = passageiros.some(p => p.user_id === currentUser?.id);
+            const availableSeats = 4 - passageiros.length;
             const isFull = availableSeats <= 0;
 
             return (
@@ -555,8 +691,17 @@ const Caronas = () => {
                   <div className="flex items-center gap-2 text-sm">
                     <DollarSign className="w-4 h-4 text-green-600" />
                     <span className="font-medium text-green-600">
-                      Gasolina: R$ {parseFloat(ride.valor_gasolina.toString()).toFixed(2)}
-                      {ride.distancia_km && ` (${ride.distancia_km}km)`}
+                      Gasolina total: R$ {parseFloat(ride.valor_gasolina.toString()).toFixed(2)}
+                      {(() => {
+                        const totalPeopleCurrent = passageiros.length + 1;
+                        const totalPeopleIfJoin = totalPeopleCurrent + (isDriver || isPassenger ? 0 : 1);
+                        const shareCurrent = parseFloat(ride.valor_gasolina.toString()) / totalPeopleCurrent;
+                        const shareIfJoin = parseFloat(ride.valor_gasolina.toString()) / totalPeopleIfJoin;
+                        if (isDriver || isPassenger) {
+                          return ` • Por pessoa (atual): R$ ${shareCurrent.toFixed(2)}`;
+                        }
+                        return ` • Se entrar: R$ ${shareIfJoin.toFixed(2)}`;
+                      })()}
                     </span>
                   </div>
                 )}
@@ -565,14 +710,14 @@ const Caronas = () => {
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-medium">
-                      Passageiros ({ride.passageiros.length}/4)
+                      Passageiros ({passageiros.length}/4)
                     </span>
                     <Badge variant={isFull ? 'destructive' : 'secondary'}>
                       {isFull ? 'Lotado' : `${availableSeats} vagas`}
                     </Badge>
                   </div>
                   <div className="flex gap-1 flex-wrap">
-                    {ride.passageiros.map(p => (
+                    {passageiros.map(p => (
                       <Badge key={p.user_id} variant="outline" className="text-xs">
                         {p.user_nome}
                       </Badge>

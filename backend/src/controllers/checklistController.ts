@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import pool from '../config/database';
 
+type AuthenticatedRequest = Request & { user?: { userId: number; role: string } };
+
 export const getAllChecklist = async (req: Request, res: Response) => {
   try {
     const { user_id } = req.query;
@@ -129,11 +131,16 @@ export const updateChecklistItem = async (req: Request, res: Response) => {
 export const deleteChecklistItem = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { user_id } = req.body;
+    const userId = (req as AuthenticatedRequest).user?.userId;
+    const userRole = (req as AuthenticatedRequest).user?.role;
+
+    if (!userId) {
+      return res.status(401).json({ success: false, error: 'Token não fornecido' });
+    }
     
     // Verificar se o item existe e quem criou
     const checkResult = await pool.query(
-      'SELECT created_by_id FROM checklist WHERE id = $1',
+      'SELECT created_by_id, categoria FROM checklist WHERE id = $1',
       [id]
     );
     
@@ -141,12 +148,25 @@ export const deleteChecklistItem = async (req: Request, res: Response) => {
       return res.status(404).json({ success: false, error: 'Item não encontrado' });
     }
     
-    // Verificar se quem está deletando é quem criou
-    if (user_id && checkResult.rows[0].created_by_id && checkResult.rows[0].created_by_id !== parseInt(user_id)) {
-      return res.status(403).json({ 
-        success: false, 
-        error: 'Apenas quem criou o item pode deletá-lo' 
-      });
+    const categoria = checkResult.rows[0].categoria as string;
+    const createdById = checkResult.rows[0].created_by_id as number | null;
+
+    if (categoria === 'item' || categoria === 'tarefa') {
+      if (userRole !== 'admin') {
+        return res.status(403).json({ 
+          success: false, 
+          error: 'Apenas administradores podem deletar este item' 
+        });
+      }
+    } else if (categoria === 'nao_esqueca') {
+      if (userRole !== 'admin') {
+        if (!createdById || createdById !== userId) {
+          return res.status(403).json({ 
+            success: false, 
+            error: 'Apenas quem criou o item pode deletá-lo' 
+          });
+        }
+      }
     }
     
     const result = await pool.query(

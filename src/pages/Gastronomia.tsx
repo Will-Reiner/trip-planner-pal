@@ -196,11 +196,14 @@ const Gastronomia = () => {
       // Recarregar dados (o dia selecionado será mantido pelo localStorage)
       await reloadData();
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erro ao adicionar refeição:', error);
+      const apiMessage = axios.isAxiosError(error)
+        ? error.response?.data?.error || error.response?.data?.message
+        : undefined;
       toast({
         title: 'Erro',
-        description: error.response?.data?.error || 'Não foi possível adicionar a refeição',
+        description: apiMessage || 'Não foi possível adicionar a refeição',
         variant: 'destructive',
       });
     }
