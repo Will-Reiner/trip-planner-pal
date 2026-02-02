@@ -87,6 +87,7 @@ const CustosNew = () => {
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<'estimate' | 'expense'>('expense');
+  const [editingType, setEditingType] = useState<'estimate' | 'expense' | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
   
   const [form, setForm] = useState({
@@ -128,21 +129,25 @@ const CustosNew = () => {
     setDialogMode(mode);
     if (item) {
       setEditingId(item.id);
+      setEditingType(mode);
+      const estimateParticipants = (item as Estimate).participantes ?? [];
+      const expenseParticipants = (item as Expense).participantes ?? [];
       setForm({
         category_id: item.category_id.toString(),
         descricao: item.descricao,
         valor: mode === 'estimate' ? (item as Estimate).valor_estimado.toString() : (item as Expense).valor_total.toString(),
         participantes: mode === 'estimate' 
-          ? (item as Estimate).participantes.map(p => p.user_id)
-          : (item as Expense).participantes.map(p => ({ user_id: p.user_id, valor_individual: p.valor_individual?.toString() || '' })),
+          ? estimateParticipants.map(p => p.user_id)
+          : expenseParticipants.map(p => ({ user_id: p.user_id, valor_individual: p.valor_individual?.toString() || '' })),
       });
     } else {
       setEditingId(null);
+      setEditingType(null);
       setForm({
         category_id: '',
         descricao: '',
         valor: '',
-        participantes: dialogMode === 'estimate' ? [] : [],
+        participantes: mode === 'estimate' ? [] : [],
       });
     }
     setIsDialogOpen(true);
@@ -159,37 +164,65 @@ const CustosNew = () => {
     }
 
     try {
+      const isSwitchingType = editingId && editingType && editingType !== dialogMode;
       if (dialogMode === 'estimate') {
+        const estimateParticipants = (form.participantes as Array<number | { user_id: number }>)
+          .map((p) => (typeof p === 'number' ? p : p.user_id))
+          .filter((userId) => typeof userId === 'number');
         const payload = {
           category_id: parseInt(form.category_id),
           descricao: form.descricao,
           valor_estimado: parseFloat(form.valor),
-          participantes: form.participantes as number[],
+          participantes: estimateParticipants,
           criado_por_id: currentUser?.id,
         };
 
         if (editingId) {
-          await axios.patch(`${API_URL}/finances/estimates/${editingId}`, payload);
-          toast({ title: 'Estimativa atualizada!' });
+          if (isSwitchingType) {
+            await axios.post(`${API_URL}/finances/estimates`, payload);
+            await axios.delete(`${API_URL}/finances/expenses/${editingId}`);
+            toast({ title: 'Estimativa criada a partir da despesa!' });
+          } else {
+            await axios.patch(`${API_URL}/finances/estimates/${editingId}`, payload);
+            toast({ title: 'Estimativa atualizada!' });
+          }
         } else {
           await axios.post(`${API_URL}/finances/estimates`, payload);
           toast({ title: 'Estimativa criada!' });
         }
       } else {
+        const expenseParticipantsRaw = form.participantes as Array<
+          number | { user_id: number; valor_individual?: string }
+        >;
+        const expenseParticipants = expenseParticipantsRaw
+          .map((p) =>
+            typeof p === 'number'
+              ? { user_id: p, valor_individual: null }
+              : {
+                  user_id: p.user_id,
+                  valor_individual: p.valor_individual
+                    ? parseFloat(p.valor_individual)
+                    : null,
+                }
+          )
+          .filter((p) => typeof p.user_id === 'number');
         const payload = {
           category_id: parseInt(form.category_id),
           descricao: form.descricao,
           valor_total: parseFloat(form.valor),
           pagador_id: currentUser?.id,
-          participantes: (form.participantes as Array<{ user_id: number; valor_individual: string }>).map(p => ({
-            user_id: p.user_id,
-            valor_individual: p.valor_individual ? parseFloat(p.valor_individual) : null,
-          })),
+          participantes: expenseParticipants,
         };
 
         if (editingId) {
-          await axios.patch(`${API_URL}/finances/expenses/${editingId}`, payload);
-          toast({ title: 'Despesa atualizada!' });
+          if (isSwitchingType) {
+            await axios.post(`${API_URL}/finances/expenses`, payload);
+            await axios.delete(`${API_URL}/finances/estimates/${editingId}`);
+            toast({ title: 'Despesa criada a partir da estimativa!' });
+          } else {
+            await axios.patch(`${API_URL}/finances/expenses/${editingId}`, payload);
+            toast({ title: 'Despesa atualizada!' });
+          }
         } else {
           await axios.post(`${API_URL}/finances/expenses`, payload);
           toast({ title: 'Despesa criada!' });
@@ -271,7 +304,7 @@ const CustosNew = () => {
       const participantes = expense.participantes || [];
       const myParticipation = participantes.find(p => p.user_id === currentUser?.id);
       
-      if (myParticipation && expense.pagador_id !== currentUser?.id) {
+      if (myParticipation) {
         const participantesComValorFixo = participantes.filter(p => p.valor_individual !== null);
         const totalValorFixo = participantesComValorFixo.reduce((sum, p) => sum + (p.valor_individual || 0), 0);
         const participantesSemValor = participantes.filter(p => p.valor_individual === null);
@@ -360,7 +393,7 @@ const CustosNew = () => {
           </div>
 
           <div className="mb-4 p-4 bg-primary/10 rounded-lg">
-            <p className="text-sm text-muted-foreground mb-1">Total a Pagar</p>
+            <p className="text-sm text-muted-foreground mb-1">Minha Parte</p>
             <p className="text-3xl font-bold text-primary">
               R$ {totalGeral.toFixed(2)}
             </p>
@@ -423,15 +456,14 @@ const CustosNew = () => {
           <DialogContent className="max-h-[80vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{editingId ? 'Editar' : 'Nova'} {dialogMode === 'estimate' ? 'Estimativa' : 'Despesa'}</DialogTitle>
-              <DialogDescription>
-                <Tabs value={dialogMode} onValueChange={(v) => setDialogMode(v as 'estimate' | 'expense')}>
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="expense">Despesa</TabsTrigger>
-                    <TabsTrigger value="estimate">Estimativa</TabsTrigger>
-                  </TabsList>
-                </Tabs>
-              </DialogDescription>
+              <DialogDescription>Escolha o tipo e preencha os campos.</DialogDescription>
             </DialogHeader>
+            <Tabs value={dialogMode} onValueChange={(v) => setDialogMode(v as 'estimate' | 'expense')}>
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="expense">Despesa</TabsTrigger>
+                <TabsTrigger value="estimate">Estimativa</TabsTrigger>
+              </TabsList>
+            </Tabs>
             <div className="space-y-4 py-4">
               <div>
                 <Label>Categoria</Label>

@@ -158,6 +158,15 @@ id (SERIAL PRIMARY KEY)
 categoria (alc/non-alc)
 nome_bebida (VARCHAR)
 votos (INTEGER)
+emoji (VARCHAR)
+created_by (FK users, nullable)
+```
+
+### Tabela `user_drink_participants`
+```sql
+id (SERIAL PRIMARY KEY)
+user_id (FK users)
+drink_id (FK drinks_poll)
 ```
 
 ### Tabela `checklist`
@@ -236,6 +245,14 @@ Erros:
 - `npm run dev` - Inicia em modo desenvolvimento
 - `npm run build` - Compila TypeScript para JavaScript
 - `npm start` - Inicia servidor em produção
+
+## 🛠️ Troubleshooting
+
+### Erro: `column d.created_by does not exist`
+Se o banco foi criado antes da migração do racha, aplique a migração segura:
+```powershell
+Get-Content .\migrations\ensure-drinks-racha.sql | docker exec -i trip-planner-db psql -U postgres -d trip_planner
+```
 
 ## 📱 Integração com Frontend
 

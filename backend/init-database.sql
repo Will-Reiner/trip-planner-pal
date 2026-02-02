@@ -425,7 +425,7 @@ VALUES (
   'Will',
   '$2b$10$YourGeneratedHashHere',
   'admin',
-  'O Mestre da Viagem 🎮'
+  'O volpi e lindo demais'
 );
 
 -- NOTA: Não criamos usuários extras aqui.

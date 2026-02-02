@@ -244,8 +244,35 @@ export const updateEstimate = async (req: Request, res: Response) => {
     
     if (participantes && Array.isArray(participantes)) {
       await client.query('DELETE FROM expense_estimate_participants WHERE estimate_id = $1', [id]);
-      
-      for (const userId of participantes) {
+
+      const normalizedParticipants = participantes
+        .map((participant: unknown) => {
+          if (typeof participant === 'number') {
+            return participant;
+          }
+
+          if (typeof participant === 'string') {
+            const parsedUserId = Number(participant);
+            return Number.isFinite(parsedUserId) ? parsedUserId : null;
+          }
+
+          if (typeof participant === 'object' && participant !== null) {
+            const participantObj = participant as { user_id?: unknown };
+            const rawUserId = participantObj.user_id;
+            const userId =
+              typeof rawUserId === 'number'
+                ? rawUserId
+                : typeof rawUserId === 'string'
+                  ? Number(rawUserId)
+                  : null;
+            return userId !== null && Number.isFinite(userId) ? userId : null;
+          }
+
+          return null;
+        })
+        .filter((userId): userId is number => userId !== null);
+
+      for (const userId of normalizedParticipants) {
         await client.query(
           'INSERT INTO expense_estimate_participants (estimate_id, user_id) VALUES ($1, $2)',
           [id, userId]
@@ -426,11 +453,56 @@ export const updateExpense = async (req: Request, res: Response) => {
     
     if (participantes && Array.isArray(participantes)) {
       await client.query('DELETE FROM expense_participants WHERE expense_id = $1', [id]);
-      
-      for (const userId of participantes) {
+
+      const normalizedParticipants = participantes
+        .map((participant: unknown) => {
+          if (typeof participant === 'number') {
+            return { user_id: participant, valor_individual: null };
+          }
+
+          if (typeof participant === 'string') {
+            const parsedUserId = Number(participant);
+            return Number.isFinite(parsedUserId)
+              ? { user_id: parsedUserId, valor_individual: null }
+              : null;
+          }
+
+          if (typeof participant === 'object' && participant !== null) {
+            const participantObj = participant as { user_id?: unknown; valor_individual?: unknown };
+            const rawUserId = participantObj.user_id;
+            const rawValorIndividual = participantObj.valor_individual;
+
+            const userId =
+              typeof rawUserId === 'number'
+                ? rawUserId
+                : typeof rawUserId === 'string'
+                  ? Number(rawUserId)
+                  : null;
+            const valorIndividual =
+              typeof rawValorIndividual === 'number'
+                ? rawValorIndividual
+                : typeof rawValorIndividual === 'string'
+                  ? Number(rawValorIndividual)
+                  : null;
+
+            if (userId !== null && Number.isFinite(userId)) {
+              return {
+                user_id: userId,
+                valor_individual: Number.isFinite(valorIndividual) ? valorIndividual : null,
+              };
+            }
+          }
+
+          return null;
+        })
+        .filter((participant): participant is { user_id: number; valor_individual: number | null } =>
+          participant !== null
+        );
+
+      for (const participant of normalizedParticipants) {
         await client.query(
-          'INSERT INTO expense_participants (expense_id, user_id) VALUES ($1, $2)',
-          [id, userId]
+          'INSERT INTO expense_participants (expense_id, user_id, valor_individual) VALUES ($1, $2, $3)',
+          [id, participant.user_id, participant.valor_individual]
         );
       }
     }
