@@ -277,4 +277,41 @@ export const voteExperience = async (experienceId: number) => {
   return response.data.data;
 };
 
+// API Calls - Party Themes
+export const getPartyThemes = async () => {
+  const response = await api.get<{ success: boolean; data: any[] }>('/party-themes');
+  return response.data.data;
+};
+
+export const getUserPartyThemeVotes = async () => {
+  const response = await api.get<{ success: boolean; data: any[] }>('/party-themes/my-votes');
+  return response.data.data;
+};
+
+export const createPartyTheme = async (themeData: {
+  nome: string;
+  descricao: string;
+  cor_card: string;
+}) => {
+  const response = await api.post<{ success: boolean; data: any }>('/party-themes', themeData);
+  return response.data.data;
+};
+
+export const votePartyTheme = async (themeId: number, voteType: 'positive' | 'negative') => {
+  const response = await api.post<{ success: boolean; data: any }>(`/party-themes/${themeId}/vote`, {
+    vote_type: voteType
+  });
+  return response.data.data;
+};
+
+export const removeVotePartyTheme = async (themeId: number) => {
+  const response = await api.delete<{ success: boolean; data: any }>(`/party-themes/${themeId}/vote`);
+  return response.data.data;
+};
+
+export const deletePartyTheme = async (themeId: number) => {
+  const response = await api.delete<{ success: boolean }>(`/party-themes/${themeId}`);
+  return response.data;
+};
+
 export default api;

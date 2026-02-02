@@ -52,9 +52,14 @@ interface Essential {
 
 interface PartyTheme {
   id: number;
-  name: string;
-  emoji: string;
-  votes: number[];
+  nome: string;
+  descricao: string | null;
+  cor_card: string;
+  autor_id: number | null;
+  autor_nome?: string;
+  positive_votes: number;
+  negative_votes: number;
+  userVote?: 'positive' | 'negative' | null;
 }
 
 interface Quote {
@@ -93,7 +98,10 @@ interface TripDataContextType {
   addEssential: (name: string) => void;
   toggleEssential: (essentialId: number) => void;
   deleteEssential: (essentialId: number) => void;
-  votePartyTheme: (themeId: number, userId: number) => void;
+  votePartyTheme: (themeId: number, voteType: 'positive' | 'negative') => Promise<void>;
+  removeVotePartyTheme: (themeId: number) => Promise<void>;
+  addPartyTheme: (nome: string, descricao: string, cor_card: string) => Promise<void>;
+  deletePartyTheme: (themeId: number) => Promise<void>;
   addQuote: (text: string, authorId: number) => void;
   reloadData: () => Promise<void>;
 }
@@ -222,16 +230,7 @@ export const TripDataProvider: React.FC<{ children: ReactNode }> = ({ children }
           created_by_id: c.created_by_id
         }));
 
-      // Mapear experiências
-      const partyThemes = experiences
-        .filter(e => e.tipo === 'tema_festa')
-        .map(e => ({
-          id: e.id,
-          name: e.conteudo,
-          emoji: '🎉',
-          votes: Array(e.votos).fill(0).map((_, i) => i + 1)
-        }));
-
+      // Mapear experincias (apenas frases agora)
       const quotes = experiences
         .filter(e => e.tipo === 'frase')
         .map(e => ({
@@ -239,6 +238,28 @@ export const TripDataProvider: React.FC<{ children: ReactNode }> = ({ children }
           text: e.conteudo,
           author: e.autor_id || 0
         }));
+
+      // Carregar temas de festa da nova API
+      const partyThemesResponse = await api.getPartyThemes();
+      const partyThemes = partyThemesResponse.map(theme => ({
+        ...theme,
+        userVote: null as 'positive' | 'negative' | null
+      }));
+
+      // Carregar votos do usuário
+      if (currentUser) {
+        try {
+          const userVotes = await api.getUserPartyThemeVotes();
+          userVotes.forEach(vote => {
+            const theme = partyThemes.find(t => t.id === vote.theme_id);
+            if (theme) {
+              theme.userVote = vote.vote_type;
+            }
+          });
+        } catch (error) {
+          console.error('Erro ao carregar votos do usuário:', error);
+        }
+      }
 
       setData({
         participants,
@@ -487,26 +508,75 @@ export const TripDataProvider: React.FC<{ children: ReactNode }> = ({ children }
     }
   };
 
-  const votePartyTheme = async (themeId: number, userId: number) => {
+  const votePartyTheme = async (themeId: number, voteType: 'positive' | 'negative') => {
+    if (!currentUser) return;
+    
     try {
-      await api.voteExperience(themeId);
+      const updatedTheme = await api.votePartyTheme(themeId, voteType);
+      
       setData(prev => ({
         ...prev,
-        partyThemes: prev.partyThemes.map(t => {
-          if (t.id === themeId) {
-            const hasVoted = t.votes.includes(userId);
-            return {
-              ...t,
-              votes: hasVoted
-                ? t.votes.filter(v => v !== userId)
-                : [...t.votes, userId]
-            };
-          }
-          return t;
-        })
+        partyThemes: prev.partyThemes.map(t => 
+          t.id === themeId ? { ...updatedTheme, userVote: voteType } : t
+        )
       }));
+      
+      toast({ title: 'Voto registrado!' });
     } catch (error) {
       toast({ title: 'Erro ao votar', variant: 'destructive' });
+    }
+  };
+
+  const removeVotePartyTheme = async (themeId: number) => {
+    if (!currentUser) return;
+    
+    try {
+      const updatedTheme = await api.removeVotePartyTheme(themeId);
+      
+      setData(prev => ({
+        ...prev,
+        partyThemes: prev.partyThemes.map(t => 
+          t.id === themeId ? { ...updatedTheme, userVote: null } : t
+        )
+      }));
+      
+      toast({ title: 'Voto removido!' });
+    } catch (error) {
+      toast({ title: 'Erro ao remover voto', variant: 'destructive' });
+    }
+  };
+
+  const addPartyTheme = async (nome: string, descricao: string, cor_card: string) => {
+    if (!currentUser) return;
+    
+    try {
+      const newTheme = await api.createPartyTheme({ nome, descricao, cor_card });
+      
+      setData(prev => ({
+        ...prev,
+        partyThemes: [{ ...newTheme, positive_votes: 0, negative_votes: 0, userVote: null }, ...prev.partyThemes]
+      }));
+      
+      toast({ title: 'Tema criado com sucesso!' });
+    } catch (error) {
+      toast({ title: 'Erro ao criar tema', variant: 'destructive' });
+    }
+  };
+
+  const deletePartyTheme = async (themeId: number) => {
+    if (!currentUser) return;
+    
+    try {
+      await api.deletePartyTheme(themeId);
+      
+      setData(prev => ({
+        ...prev,
+        partyThemes: prev.partyThemes.filter(t => t.id !== themeId)
+      }));
+      
+      toast({ title: 'Tema removido com sucesso!' });
+    } catch (error) {
+      toast({ title: 'Erro ao remover tema', variant: 'destructive' });
     }
   };
 
@@ -549,6 +619,9 @@ export const TripDataProvider: React.FC<{ children: ReactNode }> = ({ children }
       toggleEssential,
       deleteEssential,
       votePartyTheme,
+      removeVotePartyTheme,
+      addPartyTheme,
+      deletePartyTheme,
       addQuote,
       reloadData: loadAllData
     }}>
