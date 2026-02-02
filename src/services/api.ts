@@ -93,7 +93,10 @@ export interface Drink {
   id: number;
   categoria: 'alc' | 'non-alc';
   nome_bebida: string;
-  votos: number;
+  emoji: string;
+  created_by: number | null;
+  created_by_nome: string | null;
+  participants: { user_id: number; user_nome: string }[];
 }
 
 export interface ChecklistItem {
@@ -182,14 +185,24 @@ export const getDrinksByCategory = async (category: 'alc' | 'non-alc') => {
   return response.data.data;
 };
 
-export const createDrink = async (drinkData: { categoria: 'alc' | 'non-alc'; nome_bebida: string }) => {
+export const createDrink = async (drinkData: { categoria: 'alc' | 'non-alc'; nome_bebida: string; emoji: string; created_by: number }) => {
   const response = await api.post<{ success: boolean; data: Drink }>('/drinks', drinkData);
   return response.data.data;
 };
 
-export const voteDrink = async (drinkId: number) => {
-  const response = await api.post<{ success: boolean; data: Drink }>('/drinks/vote', { drink_id: drinkId });
-  return response.data.data;
+export const joinDrink = async (drinkId: number, userId: number) => {
+  const response = await api.post<{ success: boolean; message: string }>(`/drinks/${drinkId}/join`, { user_id: userId });
+  return response.data;
+};
+
+export const leaveDrink = async (drinkId: number, userId: number) => {
+  const response = await api.delete<{ success: boolean; message: string }>(`/drinks/${drinkId}/leave`, { data: { user_id: userId } });
+  return response.data;
+};
+
+export const deleteDrink = async (drinkId: number) => {
+  const response = await api.delete<{ success: boolean; message: string }>(`/drinks/${drinkId}`);
+  return response.data;
 };
 
 // API Calls - Checklist

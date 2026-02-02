@@ -43,15 +43,25 @@ CREATE TABLE meals (
     UNIQUE(data, tipo_refeicao)
 );
 
--- Tabela de Votação de Bebidas
+-- Tabela de Bebidas (Sistema de Racha)
 CREATE TABLE drinks_poll (
     id SERIAL PRIMARY KEY,
     categoria VARCHAR(50) NOT NULL CHECK (categoria IN ('alc', 'non-alc')),
     nome_bebida VARCHAR(255) NOT NULL,
-    votos INTEGER DEFAULT 0 CHECK (votos >= 0),
+    emoji VARCHAR(10) NOT NULL,
+    created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(categoria, nome_bebida)
+);
+
+-- Tabela de Participantes no Racha de Bebidas
+CREATE TABLE user_drink_participants (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    drink_id INTEGER NOT NULL REFERENCES drinks_poll(id) ON DELETE CASCADE,
+    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, drink_id)
 );
 
 -- Tabela de Checklist
@@ -209,6 +219,9 @@ CREATE INDEX idx_meals_cook ON meals(cook_id);
 
 -- Drinks
 CREATE INDEX idx_drinks_categoria ON drinks_poll(categoria);
+CREATE INDEX idx_drinks_created_by ON drinks_poll(created_by);
+CREATE INDEX idx_user_drink_participants_user ON user_drink_participants(user_id);
+CREATE INDEX idx_user_drink_participants_drink ON user_drink_participants(drink_id);
 
 -- Checklist
 CREATE INDEX idx_checklist_categoria ON checklist(categoria);
@@ -357,7 +370,8 @@ COMMENT ON COLUMN users.role IS 'Papel do usuário: admin (gerencia tudo) ou mem
 COMMENT ON COLUMN users.senha IS 'Hash bcrypt da senha do usuário';
 
 COMMENT ON TABLE meals IS 'Refeições planejadas com responsáveis';
-COMMENT ON TABLE drinks_poll IS 'Votação de bebidas para a viagem';
+COMMENT ON TABLE drinks_poll IS 'Bebidas com sistema de racha compartilhado';
+COMMENT ON TABLE user_drink_participants IS 'Participantes que entraram no racha de cada bebida';
 COMMENT ON TABLE checklist IS 'Lista de tarefas e itens para não esquecer';
 COMMENT ON TABLE user_checklist_checked IS 'Sistema de riscar individual: cada usuário pode riscar itens essenciais';
 COMMENT ON TABLE experience IS 'Frases e temas de festa sugeridos pelos usuários';
@@ -386,16 +400,7 @@ VALUES (
 -- NOTA: Não criamos usuários extras aqui.
 -- O admin Will poderá criar novos membros através do painel de administração.
 
--- Bebidas para votação
-INSERT INTO drinks_poll (categoria, nome_bebida) VALUES
-('alc', 'Cerveja'),
-('alc', 'Vinho'),
-('alc', 'Caipirinha'),
-('alc', 'Shots'),
-('non-alc', 'Suco'),
-('non-alc', 'Refri Zero'),
-('non-alc', 'Refri Normal'),
-('non-alc', 'Agua com Gas');
+-- Nenhuma bebida inicial - usuários criarão suas próprias bebidas com racha
 
 -- Categorias de despesas padrão
 INSERT INTO expense_categories (nome, icone, cor, is_system) VALUES

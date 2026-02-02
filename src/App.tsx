@@ -35,11 +35,11 @@ const AppRoutes = () => {
     <Routes>
       <Route 
         path="/login" 
-        element={token ? <Navigate to="/gastronomia" replace /> : <Login />} 
+        element={token ? <Navigate to="/experience" replace /> : <Login />} 
       />
       <Route 
         path="/" 
-        element={<Navigate to={token ? "/gastronomia" : "/login"} replace />} 
+        element={<Navigate to={token ? "/experience" : "/login"} replace />} 
       />
       <Route 
         path="/admin-usuarios" 

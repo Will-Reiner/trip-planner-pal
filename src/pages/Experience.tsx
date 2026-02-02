@@ -2,12 +2,25 @@ import { useState, useEffect } from 'react';
 import { useTripData } from '../contexts/TripDataContext';
 import { useUser } from '../contexts/UserContext';
 import BottomNav from '../components/BottomNav';
-import { Sparkles, Music, PartyPopper, MessageCircle, Users, Send, Check, Calendar } from 'lucide-react';
+import { Sparkles, Music, PartyPopper, MessageCircle, Users, Send, Check, Calendar, Sun, Sunset, Moon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+
+// Schedule Component
+const ScheduleView = () => {
+  return (
+    <div className="bg-card rounded-2xl border border-border p-8 text-center">
+      <Calendar className="w-12 h-12 mx-auto mb-3 text-muted-foreground opacity-50" />
+      <p className="text-lg font-medium text-muted-foreground mb-2">Em breve...</p>
+      <p className="text-sm text-muted-foreground">Cronograma detalhado será divulgado em breve!</p>
+    </div>
+  );
+};
 
 const Experience = () => {
   const { data, votePartyTheme, addQuote, updateParticipant } = useTripData();
@@ -73,37 +86,14 @@ const Experience = () => {
       {/* Header */}
       <div className="bg-gradient-to-br from-primary/30 to-accent p-6 pt-8">
         <div className="max-w-md mx-auto">
-          <div className="flex items-center gap-3 mb-2">
+          <div className="flex items-center gap-3">
             <Sparkles className="w-6 h-6 text-primary" />
             <h1 className="text-2xl font-bold text-foreground">Rebola's Experience</h1>
           </div>
-          <p className="text-muted-foreground">
-            A experiência completa! 🎊
-          </p>
         </div>
       </div>
 
       <div className="max-w-md mx-auto p-4 space-y-8">
-        {/* Spotify Embed */}
-        <section className="space-y-3">
-          <div className="flex items-center gap-2 mb-4">
-            <Music className="w-5 h-5 text-primary" />
-            <h2 className="text-lg font-bold text-foreground">Playlist da Trip</h2>
-          </div>
-          <div className="bg-card rounded-2xl border border-border overflow-hidden">
-            <iframe 
-              src="https://open.spotify.com/embed/playlist/3v4KHoOj2ac4XmaQy4hMPQ?utm_source=generator" 
-              width="100%" 
-              height="352" 
-              frameBorder="0" 
-              allowFullScreen
-              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
-              loading="lazy"
-              className="rounded-2xl"
-            ></iframe>
-          </div>
-        </section>
-
         {/* Countdown */}
         <section className="space-y-3">
           <div className="bg-gradient-to-br from-purple-600 via-pink-500 to-orange-500 rounded-3xl p-6 text-center shadow-xl">
@@ -180,6 +170,15 @@ const Experience = () => {
               );
             })}
           </div>
+        </section>
+
+        {/* Schedule (Cronograma) */}
+        <section className="space-y-3">
+          <div className="flex items-center gap-2 mb-4">
+            <Calendar className="w-5 h-5 text-primary" />
+            <h2 className="text-lg font-bold text-foreground">Cronograma</h2>
+          </div>
+          <ScheduleView />
         </section>
 
         {/* Quotes Wall */}
@@ -269,6 +268,26 @@ const Experience = () => {
                 )}
               </div>
             ))}
+          </div>
+        </section>
+
+        {/* Spotify Embed */}
+        <section className="space-y-3">
+          <div className="flex items-center gap-2 mb-4">
+            <Music className="w-5 h-5 text-primary" />
+            <h2 className="text-lg font-bold text-foreground">Playlist da Trip</h2>
+          </div>
+          <div className="bg-card rounded-2xl border border-border overflow-hidden">
+            <iframe 
+              src="https://open.spotify.com/embed/playlist/3v4KHoOj2ac4XmaQy4hMPQ?utm_source=generator" 
+              width="100%" 
+              height="352" 
+              frameBorder="0" 
+              allowFullScreen
+              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
+              loading="lazy"
+              className="rounded-2xl"
+            ></iframe>
           </div>
         </section>
       </div>

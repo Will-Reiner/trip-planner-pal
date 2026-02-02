@@ -2,8 +2,8 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { UtensilsCrossed, ListChecks, DollarSign, Car, Users, Trophy } from 'lucide-react';
 
 const navItems = [
-  { path: '/gastronomia', icon: UtensilsCrossed, label: 'Gastro' },
   { path: '/experience', icon: Trophy, label: 'Vibe' },
+  { path: '/gastronomia', icon: UtensilsCrossed, label: 'Gastro' },
   { path: '/caronas', icon: Car, label: 'Caronas' },
   { path: '/custos', icon: DollarSign, label: 'Custos' },
   { path: '/itens', icon: ListChecks, label: 'Itens' },

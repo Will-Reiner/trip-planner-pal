@@ -25,7 +25,9 @@ interface Drink {
   id: number;
   name: string;
   emoji: string;
-  votes: number[];
+  createdBy: string | null;
+  createdById: number | null;
+  participants: { userId: number; userName: string }[];
 }
 
 interface Item {
@@ -81,7 +83,9 @@ interface TripDataContextType {
   assignChef: (mealId: number, userId: number) => void;
   assignHelper: (mealId: number, userId: number) => void;
   assignDishWasher: (mealId: number, slot: number, userId: number) => void;
-  voteDrink: (type: 'alcoholic' | 'nonAlcoholic', drinkId: number, userId: number) => void;
+  joinDrink: (drinkId: number, userId: number) => Promise<void>;
+  leaveDrink: (drinkId: number, userId: number) => Promise<void>;
+  deleteDrink: (drinkId: number) => Promise<void>;
   addCommunityItem: (name: string) => void;
   assignCommunityItem: (itemId: number, userId: number | null) => void;
   addTask: (name: string) => void;
@@ -163,14 +167,19 @@ export const TripDataProvider: React.FC<{ children: ReactNode }> = ({ children }
         };
       });
 
-      // Mapear bebidas
+      // Mapear bebidas com nova estrutura
       const alcoholic = drinks
         .filter(d => d.categoria === 'alc')
         .map(d => ({
           id: d.id,
           name: d.nome_bebida,
-          emoji: '🍺',
-          votes: Array(d.votos).fill(0).map((_, i) => i + 1)
+          emoji: d.emoji,
+          createdBy: d.created_by_nome || null,
+          createdById: d.created_by || null,
+          participants: Array.isArray(d.participants) ? d.participants.map((p: any) => ({
+            userId: p.user_id,
+            userName: p.user_nome
+          })) : []
         }));
 
       const nonAlcoholic = drinks
@@ -178,8 +187,13 @@ export const TripDataProvider: React.FC<{ children: ReactNode }> = ({ children }
         .map(d => ({
           id: d.id,
           name: d.nome_bebida,
-          emoji: '🥤',
-          votes: Array(d.votos).fill(0).map((_, i) => i + 1)
+          emoji: d.emoji,
+          createdBy: d.created_by_nome || null,
+          createdById: d.created_by || null,
+          participants: Array.isArray(d.participants) ? d.participants.map((p: any) => ({
+            userId: p.user_id,
+            userName: p.user_nome
+          })) : []
         }));
 
       // Mapear checklist
@@ -325,29 +339,33 @@ export const TripDataProvider: React.FC<{ children: ReactNode }> = ({ children }
     }
   };
 
-  const voteDrink = async (type: 'alcoholic' | 'nonAlcoholic', drinkId: number, userId: number) => {
+  const joinDrink = async (drinkId: number, userId: number) => {
     try {
-      await api.voteDrink(drinkId);
-      setData(prev => ({
-        ...prev,
-        drinks: {
-          ...prev.drinks,
-          [type]: prev.drinks[type].map(d => {
-            if (d.id === drinkId) {
-              const hasVoted = d.votes.includes(userId);
-              return {
-                ...d,
-                votes: hasVoted
-                  ? d.votes.filter(v => v !== userId)
-                  : [...d.votes, userId]
-              };
-            }
-            return d;
-          })
-        }
-      }));
+      await api.joinDrink(drinkId, userId);
+      await loadAllData();
+      toast({ title: 'Você entrou no racha!' });
     } catch (error) {
-      toast({ title: 'Erro ao votar', variant: 'destructive' });
+      toast({ title: 'Erro ao entrar no racha', variant: 'destructive' });
+    }
+  };
+
+  const leaveDrink = async (drinkId: number, userId: number) => {
+    try {
+      await api.leaveDrink(drinkId, userId);
+      await loadAllData();
+      toast({ title: 'Você saiu do racha' });
+    } catch (error) {
+      toast({ title: 'Erro ao sair do racha', variant: 'destructive' });
+    }
+  };
+
+  const deleteDrink = async (drinkId: number) => {
+    try {
+      await api.deleteDrink(drinkId);
+      await loadAllData();
+      toast({ title: 'Bebida deletada com sucesso' });
+    } catch (error) {
+      toast({ title: 'Erro ao deletar bebida', variant: 'destructive' });
     }
   };
 
@@ -520,7 +538,9 @@ export const TripDataProvider: React.FC<{ children: ReactNode }> = ({ children }
       assignChef,
       assignHelper,
       assignDishWasher,
-      voteDrink,
+      joinDrink,
+      leaveDrink,
+      deleteDrink,
       addCommunityItem,
       assignCommunityItem,
       addTask,
