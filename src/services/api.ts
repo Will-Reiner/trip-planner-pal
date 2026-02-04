@@ -345,6 +345,23 @@ export interface PollVote {
   resposta: string;
 }
 
+export interface PollResult {
+  resposta: string;
+  vote_count: number;
+  voters: Array<{
+    user_id: number;
+    user_nome: string;
+    created_at: string;
+  }>;
+}
+
+export interface PollAdminData {
+  id: number;
+  titulo: string;
+  tipo: string;
+  results: PollResult[];
+}
+
 export const getGameLeaderboard = async () => {
   const response = await api.get<{ success: boolean; data: GamePlayer[] }>('/game/leaderboard');
   return response.data.data;
@@ -397,6 +414,11 @@ export const voteOnPoll = async (pollId: number, resposta: string) => {
 export const removePollVote = async (pollId: number) => {
   const response = await api.delete<{ success: boolean }>(`/polls/${pollId}/vote`);
   return response.data;
+};
+
+export const getPollAdminResults = async () => {
+  const response = await api.get<{ success: boolean; data: PollAdminData[] }>('/polls/admin/results');
+  return response.data.data;
 };
 
 export default api;

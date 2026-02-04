@@ -9,8 +9,10 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { Shield, UserPlus, Users, Crown, Edit, Trash2 } from 'lucide-react';
+import { Shield, UserPlus, Users, Crown, Edit, Trash2, BarChart3 } from 'lucide-react';
+import * as api from '@/services/api';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
@@ -27,6 +29,7 @@ export default function AdminUsuarios() {
   const { toast } = useToast();
   const { reloadData } = useTripData();
   const [users, setUsers] = useState<User[]>([]);
+  const [pollResults, setPollResults] = useState<api.PollAdminData[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
@@ -53,6 +56,7 @@ export default function AdminUsuarios() {
     }
 
     loadUsers();
+    loadPollResults();
   }, []);
 
   const loadUsers = async () => {
@@ -69,6 +73,20 @@ export default function AdminUsuarios() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadPollResults = async () => {
+    try {
+      const results = await api.getPollAdminResults();
+      setPollResults(results);
+    } catch (error) {
+      console.error('Erro ao carregar resultados das votações:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível carregar os resultados das votações',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -309,70 +327,129 @@ export default function AdminUsuarios() {
           </DialogContent>
         </Dialog>
 
-        {/* Users List */}
-        <div className="space-y-3">
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            <Users className="w-5 h-5" />
-            Usuários Cadastrados
-          </h2>
+        {/* Tabs for Users and Polls */}
+        <Tabs defaultValue="users" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="users" className="flex items-center gap-2">
+              <Users className="w-4 h-4" />
+              Usuários
+            </TabsTrigger>
+            <TabsTrigger value="polls" className="flex items-center gap-2">
+              <BarChart3 className="w-4 h-4" />
+              Votações
+            </TabsTrigger>
+          </TabsList>
 
-          {users.map((user) => (
-            <Card key={user.id}>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3 flex-1">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-bold text-lg">
-                      {user.nome.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-semibold">{user.nome}</h3>
-                        {user.role === 'admin' && (
-                          <Badge className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white border-0">
-                            <Crown className="w-3 h-3 mr-1" />
-                            Admin
-                          </Badge>
+          {/* Users Tab */}
+          <TabsContent value="users" className="space-y-3 mt-6">
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <Users className="w-5 h-5" />
+              Usuários Cadastrados
+            </h2>
+
+            {users.map((user) => (
+              <Card key={user.id}>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3 flex-1">
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-bold text-lg">
+                        {user.nome.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold">{user.nome}</h3>
+                          {user.role === 'admin' && (
+                            <Badge className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white border-0">
+                              <Crown className="w-3 h-3 mr-1" />
+                              Admin
+                            </Badge>
+                          )}
+                        </div>
+                        {user.titulo_engracado && (
+                          <p className="text-sm text-muted-foreground">{user.titulo_engracado}</p>
                         )}
                       </div>
-                      {user.titulo_engracado && (
-                        <p className="text-sm text-muted-foreground">{user.titulo_engracado}</p>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {/* Change Role */}
+                      {user.id !== currentUser.userId && (
+                        <Select
+                          value={user.role}
+                          onValueChange={(value: 'admin' | 'membro') => handleUpdateRole(user.id, value)}
+                        >
+                          <SelectTrigger className="w-32">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="membro">Membro</SelectItem>
+                            <SelectItem value="admin">Admin</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+
+                      {/* Delete User */}
+                      {user.id !== currentUser.userId && (
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => handleDeleteUser(user.id, user.nome)}
+                        >
+                          <Trash2 className="w-4 h-4 text-destructive" />
+                        </Button>
                       )}
                     </div>
                   </div>
+                </CardContent>
+              </Card>
+            ))}
+          </TabsContent>
 
-                  <div className="flex items-center gap-2">
-                    {/* Change Role */}
-                    {user.id !== currentUser.userId && (
-                      <Select
-                        value={user.role}
-                        onValueChange={(value: 'admin' | 'membro') => handleUpdateRole(user.id, value)}
-                      >
-                        <SelectTrigger className="w-32">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="membro">Membro</SelectItem>
-                          <SelectItem value="admin">Admin</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    )}
+          {/* Polls Tab */}
+          <TabsContent value="polls" className="space-y-4 mt-6">
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <BarChart3 className="w-5 h-5" />
+              Resultados das Votações
+            </h2>
 
-                    {/* Delete User */}
-                    {user.id !== currentUser.userId && (
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => handleDeleteUser(user.id, user.nome)}
-                      >
-                        <Trash2 className="w-4 h-4 text-destructive" />
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+            {pollResults.map((poll) => (
+              <Card key={poll.id}>
+                <CardHeader>
+                  <CardTitle className="text-base">{poll.titulo}</CardTitle>
+                  <CardDescription>Tipo: {poll.tipo}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {poll.results.length > 0 ? (
+                    <div className="space-y-4">
+                      {poll.results.map((result) => (
+                        <div key={result.resposta} className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium">{result.resposta}</span>
+                            <Badge variant="secondary">{result.vote_count} {result.vote_count === 1 ? 'voto' : 'votos'}</Badge>
+                          </div>
+                          {result.voters && result.voters.length > 0 && (
+                            <div className="pl-4 space-y-1">
+                              {result.voters.map((voter) => (
+                                <div key={voter.user_id} className="text-sm text-muted-foreground flex items-center gap-2">
+                                  <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium">
+                                    {voter.user_nome.charAt(0).toUpperCase()}
+                                  </div>
+                                  {voter.user_nome}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Nenhum voto registrado ainda</p>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
