@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useTripData } from '../contexts/TripDataContext';
 import { useUser } from '../contexts/UserContext';
 import BottomNav from '../components/BottomNav';
+import { GameCard } from '../components/GameCard';
 import { Sparkles, Music, PartyPopper, MessageCircle, Users, Send, Check, Calendar, Sun, Sunset, Moon, Plus, ThumbsUp, ThumbsDown, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -342,6 +343,11 @@ const Experience = () => {
               })
             )}
           </div>
+        </section>
+
+        {/* Game Scoring */}
+        <section className="space-y-3">
+          <GameCard />
         </section>
 
         {/* Schedule (Cronograma) */}

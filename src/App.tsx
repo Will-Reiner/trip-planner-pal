@@ -14,6 +14,7 @@ import Perfil from "./pages/Perfil";
 import ListaDeMercado from "./pages/ListaDeMercado";
 import Custos from "./pages/CustosNew";
 import Caronas from "./pages/Caronas";
+import QRRedeem from "./pages/QRRedeem";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -106,6 +107,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <Perfil />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/game/qr/:token" 
+        element={
+          <ProtectedRoute>
+            <QRRedeem />
           </ProtectedRoute>
         } 
       />

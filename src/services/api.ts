@@ -315,4 +315,33 @@ export const deletePartyTheme = async (themeId: number) => {
   return response.data;
 };
 
+// API Calls - Game System
+export interface GamePlayer {
+  id: number;
+  nome: string;
+  avatar_url: string | null;
+  total_pontos: number;
+  total_acoes: number;
+}
+
+export const getGameLeaderboard = async () => {
+  const response = await api.get<{ success: boolean; data: GamePlayer[] }>('/game/leaderboard');
+  return response.data.data;
+};
+
+export const getMyGameScore = async () => {
+  const response = await api.get<{ success: boolean; data: GamePlayer }>('/game/my-score');
+  return response.data.data;
+};
+
+export const addGamePoint = async (userId: number) => {
+  const response = await api.post<{ success: boolean; data: any }>(`/game/add-point/${userId}`);
+  return response.data.data;
+};
+
+export const redeemQRCode = async (token: string) => {
+  const response = await api.post<{ success: boolean; message: string; data: any }>(`/game/qr/${token}`);
+  return response.data;
+};
+
 export default api;

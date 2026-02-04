@@ -16,6 +16,7 @@ import marketItemsRoutes from './routes/marketItems';
 import mealIngredientsRoutes from './routes/mealIngredients';
 import expensesRoutes from './routes/expenses';
 import ridesRoutes from './routes/rides';
+import gameRoutes from './routes/game';
 
 dotenv.config();
 
@@ -73,6 +74,7 @@ app.use('/api/market-items', marketItemsRoutes);
 app.use('/api/meal-ingredients', mealIngredientsRoutes);
 app.use('/api/finances', expensesRoutes);
 app.use('/api/rides', ridesRoutes);
+app.use('/api/game', gameRoutes);
 
 // Rota não encontrada
 app.use((req: Request, res: Response) => {

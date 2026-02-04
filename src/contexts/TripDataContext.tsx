@@ -81,6 +81,8 @@ interface TripData {
   essentials: Essential[];
   partyThemes: PartyTheme[];
   quotes: Quote[];
+  gameLeaderboard: api.GamePlayer[];
+  myGameScore: api.GamePlayer | null;
 }
 
 interface TripDataContextType {
@@ -106,6 +108,8 @@ interface TripDataContextType {
   addPartyTheme: (nome: string, descricao: string, cor_card: string) => Promise<void>;
   deletePartyTheme: (themeId: number) => Promise<void>;
   addQuote: (text: string, authorId: number) => void;
+  addGamePoint: (userId: number) => Promise<void>;
+  reloadGameData: () => Promise<void>;
   reloadData: () => Promise<void>;
 }
 
@@ -121,7 +125,9 @@ export const TripDataProvider: React.FC<{ children: ReactNode }> = ({ children }
     tasks: [],
     essentials: [],
     partyThemes: [],
-    quotes: []
+    quotes: [],
+    gameLeaderboard: [],
+    myGameScore: null
   });
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
@@ -266,6 +272,21 @@ export const TripDataProvider: React.FC<{ children: ReactNode }> = ({ children }
         }
       }
 
+      // Carregar dados do jogo
+      let gameLeaderboard: api.GamePlayer[] = [];
+      let myGameScore: api.GamePlayer | null = null;
+      
+      if (currentUser) {
+        try {
+          [gameLeaderboard, myGameScore] = await Promise.all([
+            api.getGameLeaderboard(),
+            api.getMyGameScore()
+          ]);
+        } catch (error) {
+          console.error('Erro ao carregar dados do jogo:', error);
+        }
+      }
+
       setData({
         participants,
         meals: mappedMeals,
@@ -274,7 +295,9 @@ export const TripDataProvider: React.FC<{ children: ReactNode }> = ({ children }
         tasks,
         essentials,
         partyThemes,
-        quotes
+        quotes,
+        gameLeaderboard,
+        myGameScore
       });
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
@@ -631,6 +654,46 @@ export const TripDataProvider: React.FC<{ children: ReactNode }> = ({ children }
     }
   };
 
+  const addGamePoint = async (userId: number) => {
+    try {
+      await api.addGamePoint(userId);
+      
+      // Recarregar dados do jogo
+      const [gameLeaderboard, myGameScore] = await Promise.all([
+        api.getGameLeaderboard(),
+        api.getMyGameScore()
+      ]);
+      
+      setData(prev => ({
+        ...prev,
+        gameLeaderboard,
+        myGameScore
+      }));
+      
+      toast({ title: '+1 ponto concedido! 🎉' });
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.error || 'Erro ao adicionar ponto';
+      toast({ title: errorMessage, variant: 'destructive' });
+    }
+  };
+
+  const reloadGameData = async () => {
+    try {
+      const [gameLeaderboard, myGameScore] = await Promise.all([
+        api.getGameLeaderboard(),
+        api.getMyGameScore()
+      ]);
+      
+      setData(prev => ({
+        ...prev,
+        gameLeaderboard,
+        myGameScore
+      }));
+    } catch (error) {
+      console.error('Erro ao recarregar dados do jogo:', error);
+    }
+  };
+
   if (loading) {
     return <div className="flex items-center justify-center h-screen">Carregando...</div>;
   }
@@ -659,6 +722,8 @@ export const TripDataProvider: React.FC<{ children: ReactNode }> = ({ children }
       addPartyTheme,
       deletePartyTheme,
       addQuote,
+      addGamePoint,
+      reloadGameData,
       reloadData: loadAllData
     }}>
       {children}
