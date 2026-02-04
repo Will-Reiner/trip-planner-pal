@@ -27,6 +27,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { createMeal } from '@/services/api';
 import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
@@ -155,16 +156,14 @@ const Gastronomia = () => {
       // Criar a refeição
       const mealData = {
         data: `2026-01-${selectedDay.toString().padStart(2, '0')}`,
-        tipo_refeicao: tipoMapeamento[selectedMealType],
-        nome_refeicao: mealName,
-        cook_id: chefId && chefId !== 'none' ? parseInt(chefId) : null,
-        helper_id: helperId && helperId !== 'none' ? parseInt(helperId) : null,
-        dishwasher1_id: dishwasher1Id && dishwasher1Id !== 'none' ? parseInt(dishwasher1Id) : null,
-        dishwasher2_id: dishwasher2Id && dishwasher2Id !== 'none' ? parseInt(dishwasher2Id) : null,
+        tipo_refeicao: tipoMapeamento[selectedMealType] as 'cafe' | 'almoco' | 'jantar',
+        cook_id: chefId && chefId !== 'none' ? parseInt(chefId) : undefined,
+        dishwasher1_id: dishwasher1Id && dishwasher1Id !== 'none' ? parseInt(dishwasher1Id) : undefined,
+        dishwasher2_id: dishwasher2Id && dishwasher2Id !== 'none' ? parseInt(dishwasher2Id) : undefined,
       };
 
-      const mealResponse = await axios.post(`${API_URL}/meals`, mealData);
-      const newMealId = mealResponse.data.data.id;
+      const newMeal = await createMeal(mealData);
+      const newMealId = newMeal.id;
 
       // Adicionar ingredientes
       if (selectedIngredients.length > 0) {

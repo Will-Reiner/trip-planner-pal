@@ -34,11 +34,16 @@ api.interceptors.request.use(
   (config) => {
     // Adicionar token JWT se existir
     const token = localStorage.getItem('trip_planner_token');
+    console.log('🔑 Token no localStorage:', token ? 'EXISTE' : 'NÃO EXISTE');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+      console.log('✓ Token adicionado ao header');
+    } else {
+      console.warn('⚠️ Nenhum token encontrado no localStorage');
     }
     
     console.log(`➡️ Fazendo requisição: ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`);
+    console.log('📋 Headers:', config.headers);
     return config;
   },
   (error) => {

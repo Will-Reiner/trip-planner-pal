@@ -18,15 +18,18 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
   const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 
   if (!token) {
+    console.log('❌ Autenticação falhou: Token não fornecido');
     return res.status(401).json({ success: false, error: 'Token não fornecido' });
   }
 
   jwt.verify(token, JWT_SECRET, (err, decoded) => {
     if (err || !decoded || typeof decoded !== 'object') {
+      console.log('❌ Autenticação falhou: Token inválido', err?.message);
       return res.status(403).json({ success: false, error: 'Token inválido' });
     }
 
     (req as AuthenticatedRequest).user = decoded as TokenPayload;
+    console.log('✓ Autenticado:', (decoded as TokenPayload).userId, 'Role:', (decoded as TokenPayload).role);
     next();
   });
 };
@@ -36,12 +39,14 @@ export const requireAdmin = (req: Request, res: Response, next: NextFunction) =>
   const user = (req as AuthenticatedRequest).user;
   
   if (!user || user.role !== 'admin') {
+    console.log('❌ Acesso negado. User:', user?.userId, 'Role:', user?.role);
     return res.status(403).json({ 
       success: false, 
       error: 'Acesso negado. Apenas administradores.' 
     });
   }
   
+  console.log('✓ Admin autorizado:', user.userId);
   next();
 };
 
