@@ -324,6 +324,15 @@ export interface GamePlayer {
   total_acoes: number;
 }
 
+export interface QRCode {
+  id: number;
+  token: string;
+  descricao: string | null;
+  ativo: boolean;
+  usado_count: number;
+  criado_em: string;
+}
+
 export const getGameLeaderboard = async () => {
   const response = await api.get<{ success: boolean; data: GamePlayer[] }>('/game/leaderboard');
   return response.data.data;
@@ -342,6 +351,19 @@ export const addGamePoint = async (userId: number) => {
 export const redeemQRCode = async (token: string) => {
   const response = await api.post<{ success: boolean; message: string; data: any }>(`/game/qr/${token}`);
   return response.data;
+};
+
+export const createQRCode = async (token: string, descricao?: string) => {
+  const response = await api.post<{ success: boolean; data: QRCode }>('/game/qr-codes', {
+    token,
+    descricao
+  });
+  return response.data.data;
+};
+
+export const getQRCodes = async () => {
+  const response = await api.get<{ success: boolean; data: QRCode[] }>('/game/qr-codes');
+  return response.data.data;
 };
 
 export default api;

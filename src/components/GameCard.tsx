@@ -1,25 +1,187 @@
+import { useState } from 'react';
 import { useTripData } from '../contexts/TripDataContext';
 import { useUser } from '../contexts/UserContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Trophy, Plus } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Trophy, Plus, QrCode, ExternalLink } from 'lucide-react';
 import { getUserColor } from '../lib/userColors';
+import { createQRCode, getQRCodes, type QRCode as QRCodeType } from '../services/api';
+import { useToast } from '@/hooks/use-toast';
 
 export const GameCard = () => {
   const { data, addGamePoint } = useTripData();
   const { currentUser } = useUser();
+  const { toast } = useToast();
+  
+  const [showQRDialog, setShowQRDialog] = useState(false);
+  const [qrCodes, setQrCodes] = useState<QRCodeType[]>([]);
+  const [newToken, setNewToken] = useState('');
+  const [newDescription, setNewDescription] = useState('');
+  const [loadingQRCodes, setLoadingQRCodes] = useState(false);
   
   const isLumi = currentUser?.name === 'Lumi';
+  
+  const loadQRCodes = async () => {
+    try {
+      setLoadingQRCodes(true);
+      const codes = await getQRCodes();
+      setQrCodes(codes);
+    } catch (error) {
+      toast({
+        title: 'Erro ao carregar QR codes',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoadingQRCodes(false);
+    }
+  };
+  
+  const handleCreateQRCode = async () => {
+    if (!newToken.trim()) {
+      toast({
+        title: 'Token obrigatório',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    try {
+      await createQRCode(newToken.trim(), newDescription.trim() || undefined);
+      toast({
+        title: 'QR code criado!',
+        description: `Token: ${newToken}`,
+      });
+      setNewToken('');
+      setNewDescription('');
+      loadQRCodes();
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.error || 'Erro ao criar QR code';
+      toast({
+        title: errorMessage,
+        variant: 'destructive',
+      });
+    }
+  };
+  
+  const openQRDialog = () => {
+    setShowQRDialog(true);
+    loadQRCodes();
+  };
   
   // Para usuário Lumi: mostrar painel administrativo
   if (isLumi) {
     return (
       <Card className="w-full">
         <CardHeader className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">
-          <div className="flex items-center gap-2">
-            <Trophy className="w-6 h-6" />
-            <CardTitle className="text-2xl font-bold">Joguinho da Lumi</CardTitle>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Trophy className="w-6 h-6" />
+              <CardTitle className="text-2xl font-bold">Joguinho da Lumi</CardTitle>
+            </div>
+            <Dialog open={showQRDialog} onOpenChange={setShowQRDialog}>
+              <DialogTrigger asChild>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={openQRDialog}
+                >
+                  <QrCode className="w-4 h-4 mr-2" />
+                  Gerenciar QR Codes
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Gerenciar QR Codes</DialogTitle>
+                  <DialogDescription>
+                    Crie novos tokens para QR codes. Apenas tokens criados aqui serão válidos.
+                  </DialogDescription>
+                </DialogHeader>
+                
+                <div className="space-y-4">
+                  <div className="border rounded-lg p-4 bg-muted/50">
+                    <h3 className="font-semibold mb-3">Criar Novo QR Code</h3>
+                    <div className="space-y-3">
+                      <div>
+                        <Label htmlFor="token">Token (obrigatório)</Label>
+                        <Input
+                          id="token"
+                          placeholder="ex: qrcode-alpha, desafio-1, missao-secreta"
+                          value={newToken}
+                          onChange={(e) => setNewToken(e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="description">Descrição (opcional)</Label>
+                        <Input
+                          id="description"
+                          placeholder="ex: QR code da entrada, Desafio da cozinha"
+                          value={newDescription}
+                          onChange={(e) => setNewDescription(e.target.value)}
+                        />
+                      </div>
+                      <Button onClick={handleCreateQRCode} className="w-full">
+                        <Plus className="w-4 h-4 mr-2" />
+                        Criar QR Code
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h3 className="font-semibold mb-3">QR Codes Criados</h3>
+                    {loadingQRCodes ? (
+                      <p className="text-center text-muted-foreground py-4">Carregando...</p>
+                    ) : qrCodes.length === 0 ? (
+                      <p className="text-center text-muted-foreground py-4">Nenhum QR code criado ainda</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {qrCodes.map((qr) => (
+                          <div
+                            key={qr.id}
+                            className="border rounded-lg p-3 hover:bg-accent/50 transition-colors"
+                          >
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <p className="font-mono font-semibold">{qr.token}</p>
+                                {qr.descricao && (
+                                  <p className="text-sm text-muted-foreground">{qr.descricao}</p>
+                                )}
+                                <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+                                  <span className={qr.ativo ? 'text-green-600' : 'text-red-600'}>
+                                    {qr.ativo ? '✓ Ativo' : '✗ Inativo'}
+                                  </span>
+                                  <span>{qr.usado_count} {qr.usado_count === 1 ? 'uso' : 'usos'}</span>
+                                </div>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  const url = `${window.location.origin}/game/qr/${qr.token}`;
+                                  navigator.clipboard.writeText(url);
+                                  toast({ title: 'URL copiada!' });
+                                }}
+                              >
+                                <ExternalLink className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setShowQRDialog(false)}>
+                    Fechar
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
           <CardDescription className="text-purple-100">
             Painel de pontuação - Gerenciar pontos dos jogadores

@@ -5,11 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Trophy, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { redeemQRCode } from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
+import { useTripData } from '@/contexts/TripDataContext';
 
 const QRRedeem = () => {
   const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { reloadGameData } = useTripData();
   const [loading, setLoading] = useState(true);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -21,10 +23,19 @@ const QRRedeem = () => {
       return;
     }
 
+    let hasRedeemed = false;
+
     const redeem = async () => {
+      if (hasRedeemed) return;
+      hasRedeemed = true;
+
       try {
         const result = await redeemQRCode(token);
         setSuccess(true);
+        
+        // Recarregar dados do jogo para atualizar pontuação
+        await reloadGameData();
+        
         toast({
           title: result.message || '+1 ponto! 🎉',
           description: 'Parabéns! Você ganhou um ponto!',
@@ -43,7 +54,8 @@ const QRRedeem = () => {
     };
 
     redeem();
-  }, [token, toast]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-purple-500 via-pink-500 to-blue-500">
