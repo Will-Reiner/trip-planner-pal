@@ -103,3 +103,64 @@ export const removeVote = async (req: AuthRequest, res: Response) => {
     res.status(500).json({ success: false, error: 'Erro ao remover voto' });
   }
 };
+
+export const getAdminResults = async (req: AuthRequest, res: Response) => {
+  try {
+    const userRole = req.user?.role;
+
+    if (userRole !== 'admin') {
+      return res.status(403).json({ success: false, error: 'Acesso negado. Apenas administradores.' });
+    }
+
+    // Get all polls with their votes
+    const result = await pool.query(`
+      SELECT 
+        p.id as poll_id,
+        p.titulo,
+        p.tipo,
+        pv.resposta,
+        COUNT(pv.id)::int as vote_count,
+        json_agg(
+          json_build_object(
+            'user_id', u.id,
+            'user_nome', u.nome,
+            'created_at', pv.created_at
+          ) ORDER BY pv.created_at DESC
+        ) as voters
+      FROM polls p
+      LEFT JOIN poll_votes pv ON p.id = pv.poll_id
+      LEFT JOIN users u ON pv.user_id = u.id
+      GROUP BY p.id, p.titulo, p.tipo, pv.resposta
+      ORDER BY p.id, pv.resposta
+    `);
+
+    // Transform data into structured format
+    const pollsMap = new Map();
+    
+    result.rows.forEach(row => {
+      if (!pollsMap.has(row.poll_id)) {
+        pollsMap.set(row.poll_id, {
+          id: row.poll_id,
+          titulo: row.titulo,
+          tipo: row.tipo,
+          results: []
+        });
+      }
+      
+      if (row.resposta) {
+        pollsMap.get(row.poll_id).results.push({
+          resposta: row.resposta,
+          vote_count: row.vote_count,
+          voters: row.voters
+        });
+      }
+    });
+
+    const polls = Array.from(pollsMap.values());
+    
+    res.json({ success: true, data: polls });
+  } catch (error) {
+    console.error('Erro ao buscar resultados admin:', error);
+    res.status(500).json({ success: false, error: 'Erro ao buscar resultados' });
+  }
+};
