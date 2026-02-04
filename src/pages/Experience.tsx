@@ -185,7 +185,7 @@ const Experience = () => {
                     {data.polls[1] && (
                       <PollVoting
                         poll={data.polls[1]}
-                        options={['x', 'y', 'z']}
+                        options={['até R$ 200', 'R$ 200 - R$ 350', 'acima de R$ 350']}
                         userVote={data.myPollVotes.get(2)}
                         onVote={voteOnPoll}
                       />
@@ -195,7 +195,7 @@ const Experience = () => {
                     {data.polls[2] && (
                       <PollVoting
                         poll={data.polls[2]}
-                        options={['x', 'y', 'z']}
+                        options={['até R$ 150', 'R$ 150 - R$ 300', 'acima de R$ 300']}
                         userVote={data.myPollVotes.get(3)}
                         onVote={voteOnPoll}
                       />

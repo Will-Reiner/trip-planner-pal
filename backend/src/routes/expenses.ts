@@ -14,6 +14,7 @@ import {
   getDebtsSummary,
   deleteExpense
 } from '../controllers/expensesController';
+import { authenticateToken, requireAdmin } from '../controllers/authController';
 
 const router = Router();
 
@@ -30,9 +31,9 @@ router.delete('/estimates/:id', deleteEstimate);
 
 // Expenses (Real)
 router.get('/expenses', getAllExpenses);
-router.post('/expenses', createExpense);
-router.patch('/expenses/:id', updateExpense);
-router.delete('/expenses/:id', deleteExpense);
+router.post('/expenses', authenticateToken, requireAdmin, createExpense);
+router.patch('/expenses/:id', authenticateToken, requireAdmin, updateExpense);
+router.delete('/expenses/:id', authenticateToken, requireAdmin, deleteExpense);
 router.patch('/expenses/confirm-payment', confirmPayment);
 
 // Summary

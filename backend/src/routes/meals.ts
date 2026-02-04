@@ -12,7 +12,7 @@ import { authenticateToken, requireAdmin } from '../controllers/authController';
 const router = Router();
 
 router.get('/', getAllMeals);
-router.post('/', createMeal);
+router.post('/', authenticateToken, requireAdmin, createMeal);
 router.patch('/claim-role', claimRole);
 router.get('/:id', getMealById);
 router.patch('/:id', authenticateToken, requireAdmin, updateMeal);
