@@ -3,6 +3,7 @@ import { useTripData } from '../contexts/TripDataContext';
 import { useUser } from '../contexts/UserContext';
 import BottomNav from '../components/BottomNav';
 import { GameCard } from '../components/GameCard';
+import PollVoting from '../components/PollVoting';
 import { Sparkles, Music, PartyPopper, MessageCircle, Users, Send, Check, Calendar, Sun, Sunset, Moon, Plus, ThumbsUp, ThumbsDown, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,7 +28,7 @@ const ScheduleView = () => {
 };
 
 const Experience = () => {
-  const { data, votePartyTheme, removeVotePartyTheme, addPartyTheme, deletePartyTheme, addQuote, updateParticipant } = useTripData();
+  const { data, votePartyTheme, removeVotePartyTheme, addPartyTheme, deletePartyTheme, addQuote, updateParticipant, voteOnPoll, removeVoteOnPoll } = useTripData();
   const { currentUser } = useUser();
   const [newQuote, setNewQuote] = useState('');
   const [editingTitle, setEditingTitle] = useState<number | null>(null);
@@ -35,6 +36,9 @@ const Experience = () => {
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
   const [showThemeDialog, setShowThemeDialog] = useState(false);
   const [newTheme, setNewTheme] = useState({ nome: '', descricao: '', cor_card: '#8b5cf6' });
+  const [hasRebolado, setHasRebolado] = useState(() => {
+    return localStorage.getItem('hasRebolado') === 'true';
+  });
 
   const tripDate = new Date('2026-02-14T00:00:00'); // Data da trip
 
@@ -152,6 +156,78 @@ const Experience = () => {
               14 de Fevereiro de 2026 🏖️
             </p>
           </div>
+        </section>
+
+        {/* Polls Section */}
+        <section>
+          {data.polls.length > 0 && (
+            <Card className="border-2">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <PartyPopper className="w-5 h-5 text-primary" />
+                  Rebola para as Perguntas
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {!hasRebolado ? (
+                  <div className="space-y-6">
+                    {/* Waterfall Poll */}
+                    {data.polls[0] && (
+                      <PollVoting
+                        poll={data.polls[0]}
+                        options={['prefiro de graça', 'pago R$ 60', 'pago R$ 100']}
+                        userVote={data.myPollVotes.get(1)}
+                        onVote={voteOnPoll}
+                      />
+                    )}
+
+                    {/* Food Poll */}
+                    {data.polls[1] && (
+                      <PollVoting
+                        poll={data.polls[1]}
+                        options={['x', 'y', 'z']}
+                        userVote={data.myPollVotes.get(2)}
+                        onVote={voteOnPoll}
+                      />
+                    )}
+
+                    {/* Drink Poll */}
+                    {data.polls[2] && (
+                      <PollVoting
+                        poll={data.polls[2]}
+                        options={['x', 'y', 'z']}
+                        userVote={data.myPollVotes.get(3)}
+                        onVote={voteOnPoll}
+                      />
+                    )}
+
+                    {/* Rebolei Button */}
+                    <Button
+                      className="w-full mt-4"
+                      size="lg"
+                      disabled={
+                        !data.myPollVotes.get(1) ||
+                        !data.myPollVotes.get(2) ||
+                        !data.myPollVotes.get(3)
+                      }
+                      onClick={() => {
+                        setHasRebolado(true);
+                        localStorage.setItem('hasRebolado', 'true');
+                      }}
+                    >
+                      Rebolei
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-lg font-medium text-primary">
+                      Obrigado por ter rebolado para as perguntas! 🎉
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </section>
 
         {/* Party Theme Voting */}

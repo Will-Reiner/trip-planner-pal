@@ -333,6 +333,18 @@ export interface QRCode {
   criado_em: string;
 }
 
+export interface Poll {
+  id: number;
+  titulo: string;
+  tipo: string;
+  created_at: string;
+}
+
+export interface PollVote {
+  poll_id: number;
+  resposta: string;
+}
+
 export const getGameLeaderboard = async () => {
   const response = await api.get<{ success: boolean; data: GamePlayer[] }>('/game/leaderboard');
   return response.data.data;
@@ -364,6 +376,27 @@ export const createQRCode = async (token: string, descricao?: string) => {
 export const getQRCodes = async () => {
   const response = await api.get<{ success: boolean; data: QRCode[] }>('/game/qr-codes');
   return response.data.data;
+};
+
+// API Calls - Polls
+export const getPolls = async () => {
+  const response = await api.get<{ success: boolean; data: Poll[] }>('/polls');
+  return response.data.data;
+};
+
+export const getMyPollVotes = async () => {
+  const response = await api.get<{ success: boolean; data: PollVote[] }>('/polls/my-votes');
+  return response.data.data;
+};
+
+export const voteOnPoll = async (pollId: number, resposta: string) => {
+  const response = await api.post<{ success: boolean; data: PollVote }>(`/polls/${pollId}/vote`, { resposta });
+  return response.data.data;
+};
+
+export const removePollVote = async (pollId: number) => {
+  const response = await api.delete<{ success: boolean }>(`/polls/${pollId}/vote`);
+  return response.data;
 };
 
 export default api;
