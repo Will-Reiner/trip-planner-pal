@@ -414,6 +414,42 @@ COMMENT ON TABLE expenses IS 'Despesas reais durante/após viagem';
 COMMENT ON TABLE rides IS 'Caronas com divisão de gasolina';
 
 -- ========================================
+-- GAME SYSTEM
+-- ========================================
+
+-- Tabela de Pontuações do Jogo
+CREATE TABLE game_scores (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    pontos_ganhos INTEGER NOT NULL DEFAULT 1,
+    qr_token VARCHAR(255),
+    awarded_by_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    awarded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    -- Constraint para prevenir escaneamento duplicado do mesmo QR code
+    CONSTRAINT unique_user_qr UNIQUE (user_id, qr_token)
+);
+
+-- Índices para performance
+CREATE INDEX idx_game_scores_user_id ON game_scores(user_id);
+CREATE INDEX idx_game_scores_qr_token ON game_scores(qr_token);
+
+-- View para Leaderboard do Jogo
+CREATE VIEW game_leaderboard AS
+SELECT 
+    u.id,
+    u.nome,
+    u.avatar_url,
+    COALESCE(SUM(gs.pontos_ganhos), 0) as total_pontos,
+    COUNT(gs.id) as total_acoes
+FROM users u
+LEFT JOIN game_scores gs ON u.id = gs.user_id
+GROUP BY u.id, u.nome, u.avatar_url
+ORDER BY total_pontos DESC, u.nome ASC;
+
+COMMENT ON TABLE game_scores IS 'Pontuações do jogo - QR codes e pontos manuais da Lumi';
+COMMENT ON VIEW game_leaderboard IS 'Ranking de pontuação do jogo ordenado por total de pontos';
+
+-- ========================================
 -- 6. DADOS INICIAIS (SEED)
 -- ========================================
 

@@ -315,4 +315,88 @@ export const deletePartyTheme = async (themeId: number) => {
   return response.data;
 };
 
+// API Calls - Game System
+export interface GamePlayer {
+  id: number;
+  nome: string;
+  avatar_url: string | null;
+  total_pontos: number;
+  total_acoes: number;
+}
+
+export interface QRCode {
+  id: number;
+  token: string;
+  descricao: string | null;
+  ativo: boolean;
+  usado_count: number;
+  criado_em: string;
+}
+
+export interface Poll {
+  id: number;
+  titulo: string;
+  tipo: string;
+  created_at: string;
+}
+
+export interface PollVote {
+  poll_id: number;
+  resposta: string;
+}
+
+export const getGameLeaderboard = async () => {
+  const response = await api.get<{ success: boolean; data: GamePlayer[] }>('/game/leaderboard');
+  return response.data.data;
+};
+
+export const getMyGameScore = async () => {
+  const response = await api.get<{ success: boolean; data: GamePlayer }>('/game/my-score');
+  return response.data.data;
+};
+
+export const addGamePoint = async (userId: number) => {
+  const response = await api.post<{ success: boolean; data: any }>(`/game/add-point/${userId}`);
+  return response.data.data;
+};
+
+export const redeemQRCode = async (token: string) => {
+  const response = await api.post<{ success: boolean; message: string; data: any }>(`/game/qr/${token}`);
+  return response.data;
+};
+
+export const createQRCode = async (token: string, descricao?: string) => {
+  const response = await api.post<{ success: boolean; data: QRCode }>('/game/qr-codes', {
+    token,
+    descricao
+  });
+  return response.data.data;
+};
+
+export const getQRCodes = async () => {
+  const response = await api.get<{ success: boolean; data: QRCode[] }>('/game/qr-codes');
+  return response.data.data;
+};
+
+// API Calls - Polls
+export const getPolls = async () => {
+  const response = await api.get<{ success: boolean; data: Poll[] }>('/polls');
+  return response.data.data;
+};
+
+export const getMyPollVotes = async () => {
+  const response = await api.get<{ success: boolean; data: PollVote[] }>('/polls/my-votes');
+  return response.data.data;
+};
+
+export const voteOnPoll = async (pollId: number, resposta: string) => {
+  const response = await api.post<{ success: boolean; data: PollVote }>(`/polls/${pollId}/vote`, { resposta });
+  return response.data.data;
+};
+
+export const removePollVote = async (pollId: number) => {
+  const response = await api.delete<{ success: boolean }>(`/polls/${pollId}/vote`);
+  return response.data;
+};
+
 export default api;

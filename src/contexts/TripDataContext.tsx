@@ -63,6 +63,13 @@ interface PartyTheme {
   userVote?: 'positive' | 'negative' | null;
 }
 
+interface Poll {
+  id: number;
+  titulo: string;
+  tipo: string;
+  created_at: string;
+}
+
 interface Quote {
   id: number;
   text: string;
@@ -80,7 +87,11 @@ interface TripData {
   tasks: Task[];
   essentials: Essential[];
   partyThemes: PartyTheme[];
+  polls: Poll[];
+  myPollVotes: Map<number, string>;
   quotes: Quote[];
+  gameLeaderboard: api.GamePlayer[];
+  myGameScore: api.GamePlayer | null;
 }
 
 interface TripDataContextType {
@@ -105,7 +116,11 @@ interface TripDataContextType {
   removeVotePartyTheme: (themeId: number) => Promise<void>;
   addPartyTheme: (nome: string, descricao: string, cor_card: string) => Promise<void>;
   deletePartyTheme: (themeId: number) => Promise<void>;
+  voteOnPoll: (pollId: number, resposta: string) => Promise<void>;
+  removeVoteOnPoll: (pollId: number) => Promise<void>;
   addQuote: (text: string, authorId: number) => void;
+  addGamePoint: (userId: number) => Promise<void>;
+  reloadGameData: () => Promise<void>;
   reloadData: () => Promise<void>;
 }
 
@@ -121,7 +136,11 @@ export const TripDataProvider: React.FC<{ children: ReactNode }> = ({ children }
     tasks: [],
     essentials: [],
     partyThemes: [],
-    quotes: []
+    polls: [],
+    myPollVotes: new Map(),
+    quotes: [],
+    gameLeaderboard: [],
+    myGameScore: null
   });
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
@@ -266,6 +285,38 @@ export const TripDataProvider: React.FC<{ children: ReactNode }> = ({ children }
         }
       }
 
+      // Carregar dados do jogo
+      let gameLeaderboard: api.GamePlayer[] = [];
+      let myGameScore: api.GamePlayer | null = null;
+      
+      if (currentUser) {
+        try {
+          [gameLeaderboard, myGameScore] = await Promise.all([
+            api.getGameLeaderboard(),
+            api.getMyGameScore()
+          ]);
+        } catch (error) {
+          console.error('Erro ao carregar dados do jogo:', error);
+        }
+      }
+
+      // Carregar polls
+      let polls: Poll[] = [];
+      const myPollVotes = new Map<number, string>();
+      
+      try {
+        polls = await api.getPolls();
+        
+        if (currentUser) {
+          const userPollVotes = await api.getMyPollVotes();
+          userPollVotes.forEach(vote => {
+            myPollVotes.set(vote.poll_id, vote.resposta);
+          });
+        }
+      } catch (error) {
+        console.error('Erro ao carregar polls:', error);
+      }
+
       setData({
         participants,
         meals: mappedMeals,
@@ -274,7 +325,11 @@ export const TripDataProvider: React.FC<{ children: ReactNode }> = ({ children }
         tasks,
         essentials,
         partyThemes,
-        quotes
+        polls,
+        myPollVotes,
+        quotes,
+        gameLeaderboard,
+        myGameScore
       });
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
@@ -631,6 +686,88 @@ export const TripDataProvider: React.FC<{ children: ReactNode }> = ({ children }
     }
   };
 
+  const addGamePoint = async (userId: number) => {
+    try {
+      await api.addGamePoint(userId);
+      
+      // Recarregar dados do jogo
+      const [gameLeaderboard, myGameScore] = await Promise.all([
+        api.getGameLeaderboard(),
+        api.getMyGameScore()
+      ]);
+      
+      setData(prev => ({
+        ...prev,
+        gameLeaderboard,
+        myGameScore
+      }));
+      
+      toast({ title: '+1 ponto concedido! 🎉' });
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.error || 'Erro ao adicionar ponto';
+      toast({ title: errorMessage, variant: 'destructive' });
+    }
+  };
+
+  const reloadGameData = async () => {
+    try {
+      const [gameLeaderboard, myGameScore] = await Promise.all([
+        api.getGameLeaderboard(),
+        api.getMyGameScore()
+      ]);
+      
+      setData(prev => ({
+        ...prev,
+        gameLeaderboard,
+        myGameScore
+      }));
+    } catch (error) {
+      console.error('Erro ao recarregar dados do jogo:', error);
+    }
+  };
+
+  const voteOnPoll = async (pollId: number, resposta: string) => {
+    try {
+      await api.voteOnPoll(pollId, resposta);
+      
+      // Update local state
+      setData(prev => {
+        const newPollVotes = new Map(prev.myPollVotes);
+        newPollVotes.set(pollId, resposta);
+        return {
+          ...prev,
+          myPollVotes: newPollVotes
+        };
+      });
+      
+      toast({ title: 'Voto registrado! ✅' });
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.error || 'Erro ao votar';
+      toast({ title: errorMessage, variant: 'destructive' });
+    }
+  };
+
+  const removeVoteOnPoll = async (pollId: number) => {
+    try {
+      await api.removePollVote(pollId);
+      
+      // Update local state
+      setData(prev => {
+        const newPollVotes = new Map(prev.myPollVotes);
+        newPollVotes.delete(pollId);
+        return {
+          ...prev,
+          myPollVotes: newPollVotes
+        };
+      });
+      
+      toast({ title: 'Voto removido' });
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.error || 'Erro ao remover voto';
+      toast({ title: errorMessage, variant: 'destructive' });
+    }
+  };
+
   if (loading) {
     return <div className="flex items-center justify-center h-screen">Carregando...</div>;
   }
@@ -658,7 +795,11 @@ export const TripDataProvider: React.FC<{ children: ReactNode }> = ({ children }
       removeVotePartyTheme,
       addPartyTheme,
       deletePartyTheme,
+      voteOnPoll,
+      removeVoteOnPoll,
       addQuote,
+      addGamePoint,
+      reloadGameData,
       reloadData: loadAllData
     }}>
       {children}
