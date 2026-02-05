@@ -179,8 +179,9 @@ export const TripDataProvider: React.FC<{ children: ReactNode }> = ({ children }
 
       // Mapear refeições
       const mappedMeals = meals.map(m => {
-        const mealDate = new Date(m.data);
-        const day = mealDate.getDate();
+        // Extrair o dia diretamente da string para evitar problemas de timezone
+        // Formato esperado: 'YYYY-MM-DD' ou 'YYYY-MM-DDTHH:MM:SS'
+        const day = parseInt(m.data.split('T')[0].split('-')[2], 10);
         const type = m.tipo_refeicao === 'cafe' ? 'breakfast' : m.tipo_refeicao === 'almoco' ? 'lunch' : 'dinner';
         
         console.log(`📅 Meal mapping: ${m.nome_refeicao} - data: ${m.data}, day: ${day}, type: ${type}`);
