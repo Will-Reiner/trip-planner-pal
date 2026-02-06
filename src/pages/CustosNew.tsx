@@ -35,9 +35,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+import api from '@/services/api';
 
 interface Category {
   id: number;
@@ -105,9 +103,9 @@ const CustosNew = () => {
     try {
       setLoading(true);
       const [categoriesRes, estimatesRes, expensesRes] = await Promise.all([
-        axios.get(`${API_URL}/finances/categories`),
-        axios.get(`${API_URL}/finances/estimates`),
-        axios.get(`${API_URL}/finances/expenses`),
+        api.get('/finances/categories'),
+        api.get('/finances/estimates'),
+        api.get('/finances/expenses'),
       ]);
       
       setCategories(categoriesRes.data.data.filter((c: Category) => c.nome !== 'Gasolina') || []);
@@ -179,15 +177,15 @@ const CustosNew = () => {
 
         if (editingId) {
           if (isSwitchingType) {
-            await axios.post(`${API_URL}/finances/estimates`, payload);
-            await axios.delete(`${API_URL}/finances/expenses/${editingId}`);
+            await api.post('/finances/estimates', payload);
+            await api.delete(`/finances/expenses/${editingId}`);
             toast({ title: 'Estimativa criada a partir da despesa!' });
           } else {
-            await axios.patch(`${API_URL}/finances/estimates/${editingId}`, payload);
+            await api.patch(`/finances/estimates/${editingId}`, payload);
             toast({ title: 'Estimativa atualizada!' });
           }
         } else {
-          await axios.post(`${API_URL}/finances/estimates`, payload);
+          await api.post('/finances/estimates', payload);
           toast({ title: 'Estimativa criada!' });
         }
       } else {
@@ -216,15 +214,15 @@ const CustosNew = () => {
 
         if (editingId) {
           if (isSwitchingType) {
-            await axios.post(`${API_URL}/finances/expenses`, payload);
-            await axios.delete(`${API_URL}/finances/estimates/${editingId}`);
+            await api.post('/finances/expenses', payload);
+            await api.delete(`/finances/estimates/${editingId}`);
             toast({ title: 'Despesa criada a partir da estimativa!' });
           } else {
-            await axios.patch(`${API_URL}/finances/expenses/${editingId}`, payload);
+            await api.patch(`/finances/expenses/${editingId}`, payload);
             toast({ title: 'Despesa atualizada!' });
           }
         } else {
-          await axios.post(`${API_URL}/finances/expenses`, payload);
+          await api.post('/finances/expenses', payload);
           toast({ title: 'Despesa criada!' });
         }
       }
@@ -245,10 +243,10 @@ const CustosNew = () => {
   const handleDelete = async (id: number, type: 'estimate' | 'expense') => {
     try {
       if (type === 'estimate') {
-        await axios.delete(`${API_URL}/finances/estimates/${id}`);
+        await api.delete(`/finances/estimates/${id}`);
         toast({ title: 'Estimativa removida!' });
       } else {
-        await axios.delete(`${API_URL}/finances/expenses/${id}`);
+        await api.delete(`/finances/expenses/${id}`);
         toast({ title: 'Despesa removida!' });
       }
       loadAllData();
